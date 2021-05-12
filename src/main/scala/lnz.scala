@@ -56,6 +56,11 @@ object lnz extends App:
   //     _ <- r.modify(_.readMessage(x3))
   //   yield ExitCode.success
 
+  trait Peer
+
+  def negotiate: ZTransducer[Any, Nothing, ZStream.Connection, Peer] = ???
+
+
   val init: Either[String, HandshakeState] = Right(responder)
 
   def handshake(conn: ZStream.Connection) =
