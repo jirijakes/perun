@@ -20,6 +20,7 @@ libraryDependencies ++= List(
   "fr.acinq.secp256k1" % "secp256k1-kmp-jni-jvm" % "0.5.1",
   "org.scodec" %% "scodec-core" % "2.0.0-RC3",
   "org.scodec" %% "scodec-bits" % "1.1.26",
+  "org.hsqldb" % "hsqldb" % "2.6.0"
 )
 
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")

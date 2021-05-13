@@ -56,7 +56,7 @@ object lnz extends App:
   //     _ <- r.modify(_.readMessage(x3))
   //   yield ExitCode.success
 
-  final case class Peer(c1: CipherState, c2: CipherState)
+  final case class Peer(rk: CipherState, sk: CipherState)
 
   // val init: Either[Peer, HandshakeState] = Right(responder)
 
@@ -117,7 +117,7 @@ object lnz extends App:
       // .mapM
       .mapMParUnordered(10) { c =>
         handshake(responder, c.read, c.write).flatMap { (peer, leftover) =>
-          val x = peer.c1.decryptWithAd(ByteVector.empty, leftover.take(18))
+          val x = peer.rk.decryptWithAd(ByteVector.empty, leftover.take(18))
           putStrLn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " + x._1.toString)
         } *> c.close()
       // c.read

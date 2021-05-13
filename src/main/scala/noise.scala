@@ -49,21 +49,28 @@ enum HandshakeRole:
 
 enum CipherState:
   case Empty
-  case Running(k: ByteVector, n: BigInt)
+  case Running(ck: ByteVector, k: ByteVector, n: BigInt)
+
+  def next: CipherState = this match
+    case Empty => Empty
+    case Running(ck, k, 999) =>
+      val (ck1, k1) = hkdf(ck, k)
+      Running(ck1, k1, 0)
+    case Running(ck, k, n) => Running(ck, k, n + 1)
 
   def encryptWithAd(
       ad: ByteVector,
       plaintext: ByteVector
   ): (ByteVector, CipherState) = this match
-    case Empty         => (plaintext, Empty)
-    case Running(k, n) => (encrypt(k, n, ad, plaintext), Running(k, n + 1))
+    case Empty             => (plaintext, Empty)
+    case Running(ck, k, n) => (encrypt(k, n, ad, plaintext), next)
 
   def decryptWithAd(
       ad: ByteVector,
       ciphertext: ByteVector
   ): (ByteVector, CipherState) = this match
-    case Empty         => (ciphertext, Empty)
-    case Running(k, n) => (decrypt(k, n, ad, ciphertext), Running(k, n + 1))
+    case Empty             => (ciphertext, Empty)
+    case Running(ck, k, n) => (decrypt(k, n, ad, ciphertext), next)
 
 final class SymmetricState(
     ck: ByteVector,
@@ -75,7 +82,7 @@ final class SymmetricState(
 
   def mixKey[B: Binary](data: B): SymmetricState =
     val (ck1, temp) = hkdf(ck, data.bytes)
-    new SymmetricState(ck1, h, CipherState.Running(temp, 0))
+    new SymmetricState(ck1, h, CipherState.Running(ck, temp, 0))
 
   def cip(newCipherState: CipherState): SymmetricState =
     new SymmetricState(ck, h, newCipherState)
@@ -90,7 +97,7 @@ final class SymmetricState(
 
   def split: (CipherState, CipherState) =
     val (tempk1, tempk2) = hkdf(ck, ByteVector.empty)
-    (CipherState.Running(tempk1, 0), CipherState.Running(tempk2, 0))
+    (CipherState.Running(ck, tempk1, 0), CipherState.Running(ck, tempk2, 0))
 
 object SymmetricState:
   def apply(protocolName: String, prologue: String): SymmetricState =

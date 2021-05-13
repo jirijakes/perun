@@ -6,12 +6,10 @@ import zio.test.*
 import Assertion.*
 
 import lnz.handshake
+import perun.test.*
 import _root_.noise.*
 
 object noise extends DefaultRunnableSpec:
-
-  def cip(s: String, n: Int): CipherState =
-    CipherState.Running(ByteVector.fromValidHex(s), n)
 
   val bolt8test =
     suite("BOLT #8 test vector")(
@@ -37,13 +35,13 @@ object noise extends DefaultRunnableSpec:
 
         val expected = (
           lnz.Peer(
-            cip(
+            cipherState(
+              "919219dbb2920afa8db80f9a51787a840bcf111ed8d588caf9ab4be716e42b01",
               "969ab31b4d288cedf6218839b27a3e2140827047f2c0f01bf5c04435d43511a9",
-              0
             ),
-            cip(
+            cipherState(
+              "919219dbb2920afa8db80f9a51787a840bcf111ed8d588caf9ab4be716e42b01",
               "bb9020b8965f4df047e07f955f3c4b88418984aadc5cdb35096b9ea8fa5c3442",
-              0
             )
           ),
           ByteVector(1, 1, 1)
