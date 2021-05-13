@@ -5,9 +5,9 @@ scalaVersion := "3.0.0-RC3"
 resolvers += Resolver.publishMavenLocal
 
 libraryDependencies ++= List(
-  "dev.zio" %% "zio" % "1.0.7",
-  "dev.zio" %% "zio-streams" % "1.0.7",
-  "dev.zio" %% "zio-logging" % "0.5.8+12-6ca62f11+20210512-0801-SNAPSHOT",
+  "dev.zio" %% "zio" % "1.0.7+32-52d1f000-SNAPSHOT",
+  "dev.zio" %% "zio-streams" % "1.0.7+32-52d1f000-SNAPSHOT",
+  "dev.zio" %% "zio-logging" % "0.5.8+17-a9e86edb-SNAPSHOT",
   // "dev.zio" % "zio-nio" % "1.0.0-RC10",
   "dev.zio" %% "zio-prelude" % "1.0.0-RC4",
   "dev.zio" %% "zio-test" % "1.0.7" % Test,

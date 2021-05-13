@@ -56,20 +56,25 @@ object lnz extends App:
   //     _ <- r.modify(_.readMessage(x3))
   //   yield ExitCode.success
 
-  trait Peer
+  final case class Peer(c1: CipherState, c2: CipherState)
 
-  def negotiate: ZTransducer[Any, Nothing, ZStream.Connection, Peer] = ???
+  // val init: Either[Peer, HandshakeState] = Right(responder)
 
-
-  val init: Either[String, HandshakeState] = Right(responder)
-
-  def handshake(conn: ZStream.Connection) =
-    conn.read
+  def handshake(
+      init: HandshakeState,
+      read: Stream[Throwable, Byte],
+      write: Sink[Throwable, Byte, Nothing, Int]
+  ) =
+    read
       .transduce(collectByLengths(50, 66))
       .map(c => ByteVector.apply(c.toArray))
-      .tap(b => putStrLn(b.toString))
-      .foldWhileM((init, false))(_._2 == false) {
-        case ((Left(x), _), m) => UIO((Left(x), true))
+      // .tap(b => putStrLn(b.toString))
+      .foldWhileM(
+        (Right(init): Either[Peer, HandshakeState], Option.empty[ByteVector])
+      )(_._2.isEmpty) {
+        case ((l @ Left(_), _), m) =>
+          // println("1 @@@@ " + l)
+          UIO((l, Some(m)))
         case ((Right(st), _), m) =>
           for
             x <- st.readMessage(m)
@@ -77,7 +82,7 @@ object lnz extends App:
             y <- x match
               case HandshakeResult.Done(c1, c2) =>
                 // println("3 @@@@ " + x + " / " + m)
-                UIO.succeed((Left(s"$c1 $c2"), false))
+                UIO.succeed((Left(Peer(c1, c2)), None))
 
               case HandshakeResult.Continue(_, s) =>
                 // println("4 @@@@ " + x + " / " + m)
@@ -89,12 +94,14 @@ object lnz extends App:
                     // println("6 @@@@ " + x + " / " + m)
                     ZStream
                       .fromIterable(m.toArray)
-                      .run(conn.write)
-                      // .tap(x => putStrLn(">>>>>> " + x))
-                      .as((Right(s), false))
+                      .run(write)
+                      // .tap(x => putStrLn("7 >>>>>> " + x))
+                      .as((Right(s), None))
                 }
           yield y
       }
+      // .tap(xxx => ZIO.effectTotal(println("###> " + xxx)))
+      .collect("BOOOM") { case (Left(m), Some(n)) => (m, n) }
 
   def run2(args: List[String]) = ZStream
     .iterate(1)(_ + 1)
@@ -109,9 +116,10 @@ object lnz extends App:
       .fromSocketServer(9977, None)
       // .mapM
       .mapMParUnordered(10) { c =>
-        handshake(c).flatMap(x =>
-          putStrLn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " + x.toString)
-        ) *> c.close()
+        handshake(responder, c.read, c.write).flatMap { (peer, leftover) =>
+          val x = peer.c1.decryptWithAd(ByteVector.empty, leftover.take(18))
+          putStrLn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " + x._1.toString)
+        } *> c.close()
       // c.read
       // .transduce(ZTransducer.utf8Decode)
       // .flatMap(s => ZStream.fromIterable(s.reverse.getBytes))

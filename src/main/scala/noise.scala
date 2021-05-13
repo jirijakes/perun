@@ -136,7 +136,7 @@ final class HandshakeState(
     val re: Option[ECPublicKey],
     val role: HandshakeRole,
     patterns: List[List[Token]],
-    symmetric: SymmetricState,
+    val symmetric: SymmetricState,
     val expected: List[Int]
 ):
 
@@ -314,7 +314,7 @@ final class HandshakeState(
         UIO.succeed {
           nextHs.nextPattern match
             case None =>
-              val (c1, c2) = symmetric.split
+              val (c1, c2) = nextHs.symmetric.split
               HandshakeResult.Done(c1, c2)
             case Some(st) =>
               HandshakeResult.Continue(plaintext, st.nextExpected)
