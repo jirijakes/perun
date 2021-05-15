@@ -8,6 +8,13 @@ import zio.stream.*
 
 import noise.*
 
+def init(
+    in: Stream[Throwable, Byte],
+    out: Sink[Throwable, Byte, Nothing, Int],
+    rk: CipherState,
+    sk: CipherState
+) = ???
+
 def start(
     in: Stream[Throwable, Byte],
     out: Sink[Throwable, Byte, Nothing, Int],
@@ -46,7 +53,7 @@ def encrypt(sk: CipherState): ZTransducer[Any, Nothing, ByteVector, Byte] =
       .makeManaged(sk)
       .map { ref =>
         {
-          case None => UIO(Chunk.empty)
+          case None                 => UIO(Chunk.empty)
           case Some(c) if c.isEmpty => UIO(Chunk.empty)
           case Some(c) =>
             val b = c.head

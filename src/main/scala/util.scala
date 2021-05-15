@@ -8,7 +8,7 @@ import zio.stream.ZTransducer
   * After all the chunks of requested lengths have been emitted, the rest of
   * streams will preserve original chunks. The only exception is the first chunk
   * following requested chunks which may be of different length.
-  * 
+  *
   * If not enough elements are available, the stream will wait for new elements
   * or end of stream when it will not emit any new chunks as the demand could
   * not be satisfied.
@@ -42,7 +42,7 @@ def collectByLengths[T](
       .makeManaged((lengths.toList, Chunk[T]()))
       .map { st =>
         {
-          case None => st.modify( (_, s) => (Chunk.empty, (Nil, s)))
+          case None => st.modify((_, s) => (Chunk.empty, (Nil, s)))
           case Some(c) =>
             st.modify {
               case (l @ (h :: t), s) =>

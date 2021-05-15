@@ -117,8 +117,10 @@ object lnz extends App:
       // .mapM
       .mapMParUnordered(10) { c =>
         handshake(responder, c.read, c.write).flatMap { (peer, leftover) =>
-          val x = peer.rk.decryptWithAd(ByteVector.empty, leftover.take(18))
-          putStrLn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " + x._1.toString)
+          val str = Stream.fromIterable(leftover.toArray) ++ c.read
+          str
+            .transduce(perun.peer.decrypt(peer.rk))
+            .foreach(x => putStrLn(x.toString))
         } *> c.close()
       // c.read
       // .transduce(ZTransducer.utf8Decode)

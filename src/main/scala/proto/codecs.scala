@@ -1,15 +1,18 @@
-import scodec._
-import scodec.bits._
-import scodec.codecs._
+package perun.proto.codecs
+
+import scodec.*
+import scodec.bits.*
+import scodec.codecs.*
+
+import perun.proto.*
 
 opaque type ChannelId = ByteVector
 
 case class AllChannels()
 
-object ChannelId {
+object ChannelId:
   def make(bytes: ByteVector): Either[String, ChannelId] =
     if bytes.length == 32 then Right(bytes) else Left("must be 32")
-}
 
 extension (c: ChannelId) def toBytes: ByteVector = c
 
@@ -32,3 +35,6 @@ val error: Codec[Error] =
         case Error(AllChannels(), d) => (allChannels, d)
       }
     )
+
+export UInt64.uint64
+export UInt64.bigsize
