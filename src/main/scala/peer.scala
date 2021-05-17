@@ -1,13 +1,18 @@
 package perun.peer
 
-import scodec.Attempt
+import scodec.*
 import scodec.codecs.uint16
-import scodec.bits.ByteVector
+import scodec.bits.*
+import scodec.bits.hex
 import zio.*
+import zio.clock.Clock
 import zio.console.*
+import zio.duration.*
 import zio.stream.*
 
 import noise.*
+
+import perun.proto.{Message, Response}
 
 def start(
     in: Stream[Throwable, Byte],
@@ -15,25 +20,51 @@ def start(
     close: ZIO[Any, Nothing, Unit],
     rk: CipherState,
     sk: CipherState
-): ZIO[Console, Nothing, Unit] =
+): ZIO[Clock & Console, Nothing, Unit] =
   for
     hr <- ZHub.unbounded[perun.proto.Message]
-    hw <- ZHub.unbounded[ByteVector]
+    hw <- ZHub.unbounded[perun.proto.Message]
+    _ <- ZStream
+      .fromHub(hr)
+      .mapM {
+        case Message.Ping(p) => perun.proto.ping.receiveMessage(p)
+        case Message.Init(_) => UIO(Response.Ignore)
+        case Message.Pong(_) => UIO(Response.Ignore)
+      }
+      .foreach {
+        case Response.Ignore  => ZIO.unit
+        case Response.Send(m) => hw.publish(m)
+      }
+      .fork
     f1 <- in
       .transduce(decrypt(rk))
-      .tap(x => putStrLn(s"Received: $x"))
-      .map(x => perun.proto.decode(x).right.get)
-      .foreach(s => hr.publish(s))
+      .map(perun.proto.decode)
+      .foreach {
+        case Right(m) => putStrLn(s"Received: $m") *> hr.publish(m)
+        case Left(e)  => putStrLn("Error: " + e)
+      }
       .fork
     f3 <- ZStream
       .fromHub(hw)
+      .tap(i => putStrLn(s"Sending: $i"))
+      .map(x => perun.proto.encode(x))
       .transduce(encrypt(sk))
       .run(out)
       .fork
-    f2 <- ZStream
-      .fromHub(hr)
-      .tap(i => putStrLn(s"Sending: $i"))
-      .foreach(i => ZIO.unit) // hw.publish(i))
+    _ <- ZIO.sleep(1.second) *> hw
+      .publish(
+        perun.proto.Message.Init(
+          perun.proto.init.Init(
+            perun.proto.features.Features(hex"0x8000000000000000002822aaa2"),
+            List(
+              "f61eee3b63a380a477a063af32b2bbc97c9ff9f01f2c4225e973988108000000"
+            )
+          )
+        )
+      )
+      .fork
+    // _ <- perun.proto.ping.schedule(hr, hw).fork
+    _ <- f1.join.orDie
     _ <- close
   yield ()
 

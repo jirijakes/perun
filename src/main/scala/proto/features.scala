@@ -6,6 +6,10 @@ import scodec.bits.ByteVector
 
 opaque type Features = ByteVector
 
+// TODO: remove
+object Features:
+    def apply(b: ByteVector): Features = b
+
 enum Feature(name: String, description: String):
   case InitialRoutingSync
       extends Feature(
