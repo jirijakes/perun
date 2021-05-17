@@ -17,12 +17,12 @@ def start(
     sk: CipherState
 ): ZIO[Console, Nothing, Unit] =
   for
-    hr <- ZHub.unbounded[ByteVector]
+    hr <- ZHub.unbounded[perun.proto.Message]
     hw <- ZHub.unbounded[ByteVector]
     f1 <- in
       .transduce(decrypt(rk))
       .tap(x => putStrLn(s"Received: $x"))
-      .tap(x => putStrLn(perun.proto.init.init.decode(x.drop(2).toBitVector).toString))
+      .map(x => perun.proto.decode(x).right.get)
       .foreach(s => hr.publish(s))
       .fork
     f3 <- ZStream
@@ -33,7 +33,7 @@ def start(
     f2 <- ZStream
       .fromHub(hr)
       .tap(i => putStrLn(s"Sending: $i"))
-      .foreach(i => hw.publish(i))
+      .foreach(i => ZIO.unit) // hw.publish(i))
     _ <- close
   yield ()
 
