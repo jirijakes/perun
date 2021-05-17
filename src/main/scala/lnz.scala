@@ -2,22 +2,12 @@ import scodec.bits.*
 
 import zio.*
 import zio.console.*
-import zio.logging.*
+// import zio.logging.*
 import zio.stream.*
 
 object lnz extends App:
 
   val x = org.bitcoins.crypto.ECPublicKey.dummy
-
-// val y = ChannelId
-//   .make(
-//     ByteVector.fromValidHex(
-//       "0x000000000000000000000000000000000000000000000000000000000000"
-//     )
-//   )
-//   .getOrElse(???)
-
-// val e = Error(y, "boom")
 
   System.loadLibrary("secp256k1")
   org.scijava.nativelib.NativeLoader.loadLibrary("secp256k1")
@@ -57,8 +47,6 @@ object lnz extends App:
   //   yield ExitCode.success
 
   final case class Peer(rk: CipherState, sk: CipherState)
-
-  // val init: Either[Peer, HandshakeState] = Right(responder)
 
   def handshake(
       init: HandshakeState,
@@ -103,39 +91,24 @@ object lnz extends App:
       // .tap(xxx => ZIO.effectTotal(println("###> " + xxx)))
       .collect("BOOOM") { case (Left(m), Some(n)) => (m, n) }
 
-  def run2(args: List[String]) = ZStream
-    .iterate(1)(_ + 1)
-    .take(100)
-    .chunkN(3)
-    .transduce(collectByLengths(11, 8, 4))
-    .foreach(x => putStrLn(x.toString))
-    .exitCode
-
   def run(args: List[String]): URIO[ZEnv, ExitCode] =
     ZStream
       .fromSocketServer(9977, None)
-      // .mapM
-      .mapMParUnordered(10) { c =>
-        handshake(responder, c.read, c.write).flatMap { (peer, leftover) =>
-          val str = Stream.fromIterable(leftover.toArray) ++ c.read
-          str
-            .transduce(perun.peer.decrypt(peer.rk))
-            .foreach(x => putStrLn(x.toString))
-        } *> c.close()
-      // c.read
-      // .transduce(ZTransducer.utf8Decode)
-      // .flatMap(s => ZStream.fromIterable(s.reverse.getBytes))
-      // .map(Chunk.fromArray)
-      // .run(c.write)
-      // .foreach(x => putStrLn(x))
-      // .as(c)
+      .foreach { c =>
+        handshake(responder, c.read, c.write)
+          .flatMap { (peer, leftover) =>
+            perun.peer
+              .start(
+                Stream.fromIterable(leftover.toArray) ++ c.read,
+                c.write,
+                c.close(),
+                peer.rk,
+                peer.sk
+              )
+              .forkDaemon
+          }
       }
-      .tap(x => ZIO.effectTotal(println("CLOSED: " + x)))
-      .forever
-      .runDrain
-      // .flatMap(_ => ZIO.never)
       .provideCustomLayer(crypto.keygen.live)
-      // .provideLayer(Logging.console())
       .exitCode
 
 end lnz

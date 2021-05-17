@@ -4,23 +4,38 @@ import scodec.Attempt
 import scodec.codecs.uint16
 import scodec.bits.ByteVector
 import zio.*
+import zio.console.*
 import zio.stream.*
 
 import noise.*
 
-def init(
-    in: Stream[Throwable, Byte],
-    out: Sink[Throwable, Byte, Nothing, Int],
-    rk: CipherState,
-    sk: CipherState
-) = ???
-
 def start(
     in: Stream[Throwable, Byte],
     out: Sink[Throwable, Byte, Nothing, Int],
+    close: ZIO[Any, Nothing, Unit],
     rk: CipherState,
     sk: CipherState
-) = ???
+): ZIO[Console, Nothing, Unit] =
+  for
+    hr <- ZHub.unbounded[ByteVector]
+    hw <- ZHub.unbounded[ByteVector]
+    f1 <- in
+      .transduce(decrypt(rk))
+      .tap(x => putStrLn(s"Received: $x"))
+      .tap(x => putStrLn(perun.proto.init.init.decode(x.drop(2).toBitVector).toString))
+      .foreach(s => hr.publish(s))
+      .fork
+    f3 <- ZStream
+      .fromHub(hw)
+      .transduce(encrypt(sk))
+      .run(out)
+      .fork
+    f2 <- ZStream
+      .fromHub(hr)
+      .tap(i => putStrLn(s"Sending: $i"))
+      .foreach(i => hw.publish(i))
+    _ <- close
+  yield ()
 
 def decrypt(rk: CipherState): ZTransducer[Any, Nothing, Byte, ByteVector] =
   ZTransducer {

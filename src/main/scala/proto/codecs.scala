@@ -36,5 +36,7 @@ val error: Codec[Error] =
       }
     )
 
-export UInt64.uint64
-export UInt64.bigsize
+// export UInt64.uint64
+// export UInt64.bigsize
+// export perun.proto.init.codec as init
+// export perun.proto.types.features.codec as features

@@ -56,7 +56,6 @@ object UInt64:
           fallback.decode(b)
       }
 
-
   // TODO: Does this need its own value? Is this needed or should be joined with `bigsize`?
   val bigsize64: Codec[UInt64] =
     discriminatorWithDefault(
@@ -79,7 +78,7 @@ object UInt64:
     * The total size can be 1, 3, 5 or 9 bytes depending on the size of the integer. All values are encoded as big-endian.
     *
     * This version can only handle signed 64-bit values.
-    * 
+    *
     * The value x will be encoded as:
     *
     * ```text
