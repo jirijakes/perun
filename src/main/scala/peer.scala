@@ -96,81 +96,162 @@ def start(
     _ <- close
   yield ()
 
-// final case class Decrypt(rk: CipherState, leftover: Option[ByteVector])
+/** Result of calling [[decryptOne]]. */
+enum DecryptedOne:
 
-enum DecodedOne:
+  /** An error occurred during decryption. This most likely happened because of invalid HMAC tag.
+    * It may be because of malicious or buggy peer's client.
+    *
+    * @param msg error message with more details
+    */
   case DecryptError(msg: String)
+
+  /** An error occurred during decoding. [[decryptOne]] function performs only one decoding (message length)
+    * therefore the problem probably appeared there. The reason may be malicious or buggy peer's client.
+    *
+    * @param msg error message with more details
+    */
   case DecodeError(msg: String)
+
+  /** The ciphertext was completely and correctly decrypted and no more bytes remained.
+    *
+    * @param plaintext decrypted message
+    * @param newState new cipher state
+    */
   case Done(plaintext: ByteVector, newState: CipherState)
+
+  /** The ciphertext was correctly decrypted but more encrypted bytes remained.
+    *
+    * @param plaintext decrypted message
+    * @param leftover encrypted remaining bytes
+    * @param newState new cipher state
+    */
   case Leftover(
       plaintext: ByteVector,
       leftover: Chunk[Byte],
       newState: CipherState
   )
+
+  /** Message length was correctly decoded however the provided ciphertext did not contain
+    * enough bytes. More must be provided.
+    *
+    * @param part complete encrypted bytes, including message length
+    * @param state original state
+    */
   case Demand(part: Chunk[Byte], state: CipherState)
 
-/** Attempt to decrypt and decode `bytes` with cipher state `cip`. In case of decryption
-  * error (e. g. wrong tag), returns a relevant type of error as `Left`. Otherwise,
-  * returns returns `Right` with [[DecryptResult]].
+/** Attempt to decrypt first message from `ciphertext` with cipher state `cip`.
   *
+  * The result of this attempt may be one of:
+  *
+  * - **Done**: All bytes decrypted
+  * - **Leftover**: Some bytes decrypted but more bytes remain
+  * - **Demand**: Length of message decoded but not enough bytes available for the message
+  * - **DecryptError** : Could not decrypt bytes due to bad HMAC tag or similar
+  * - **DecodeError**: Could not decode decrypted message message length
+  *
+  * @param ciphertext
   * @param cip initial cipher state
-  * @param bytes ciphertext
+  * @return result of decryption with decrypted message, if available
+  * @see [[https://github.com/lightningnetwork/lightning-rfc/blob/master/08-transport.md#receiving-and-decrypting-messages BOLT #8 Receiving and Decrypting Messages]]
   */
-def decodeOne(cip: CipherState, bytes: Chunk[Byte]): DecodedOne =
+def decryptOne(ciphertext: Chunk[Byte], cip: CipherState): DecryptedOne =
   // 1. Read exactly 18 bytes from the network buffer.
   // 2. Let the encrypted length prefix be known as lc.
-  if bytes.length < 18 then DecodedOne.Demand(bytes, cip)
+  if ciphertext.length < 18 then DecryptedOne.Demand(ciphertext, cip)
   else
-    val (lc, rest) = bytes.splitAt(18)
+    val (lc, rest) = ciphertext.splitAt(18)
 
     // 3. Decrypt lc […] to obtain the size of the encrypted packet l
     //   -  A zero-length byte slice is to be passed as the AD (associated data).
     //   -  The nonce rn MUST be incremented after this step.
     cip.decryptWithAd0(ByteVector.view(lc.toArray)) match
       case Left(x) =>
-        DecodedOne.DecryptError(x.toString)
+        DecryptedOne.DecryptError(x.toString)
       case Right(lb, next) =>
         uint16.decodeValue(lb.toBitVector) match
           case Attempt.Failure(err) =>
-            DecodedOne.DecodeError(err.message)
+            DecryptedOne.DecodeError(err.message)
           case Attempt.Successful(l) =>
             // 4. Read exactly l+16 bytes from the network buffer, and let the bytes be known as c.
             val (c, nextMsg) = rest.splitAt(l + 16)
-            if c.length < l + 16 then DecodedOne.Demand(bytes, cip)
+            if c.length < l + 16 then DecryptedOne.Demand(ciphertext, cip)
             else
               // 5. Decrypt c […] to obtain decrypted plaintext packet p.
               //   - The nonce rn MUST be incremented after this step.
               next.decryptWithAd0(ByteVector.view(c.toArray)) match
                 case Left(x) =>
-                  DecodedOne.DecryptError(x.toString)
+                  DecryptedOne.DecryptError(x.toString)
                 case Right(p, nextState) =>
-                  if nextMsg.isEmpty then DecodedOne.Done(p, nextState)
-                  else DecodedOne.Leftover(p, nextMsg, nextState)
+                  if nextMsg.isEmpty then DecryptedOne.Done(p, nextState)
+                  else DecryptedOne.Leftover(p, nextMsg, nextState)
 
-enum Decoded:
+/** Result of calling [[decryptAll]]. */
+enum Decrypted:
+
+  /** An error occurred during decryption. This most likely happened because of invalid HMAC tag.
+    * It may be because of malicious or buggy peer's client.
+    *
+    * @param msg error message with more details
+    */
   case DecryptError(msg: String)
+
+  /** An error occurred during decoding. [[decryptAll]] function performs only decoding of message lengths
+    * therefore the problem probably appeared there. The reason may be malicious or buggy peer's client.
+    *
+    * @param msg error message with more details
+    */
   case DecodeError(msg: String)
+
+  /** The ciphertext was completely and correctly decrypted and no more bytes remained.
+    *
+    * @param plaintext decrypted messages
+    * @param newState new cipher state
+    */
   case Done(plaintext: Chunk[ByteVector], newState: CipherState)
+
+  /** Some messages were correctly decrypted however the provided ciphertext did not contain
+    * enough bytes for the next message. More bytes must be provided.
+    *
+    * @param complete completely decrypted messages
+    * @param part incomplete encrypted bytes of next message, including message length
+    * @param nextState next state
+    */
   case Demand(
       complete: Chunk[ByteVector],
       part: Chunk[Byte],
-      state: CipherState
+      nextState: CipherState
   )
 
-def decodeAll(cip: CipherState, bs: Chunk[Byte]): Decoded =
+/** Attempt to decrypt all messages contained in `ciphertext` with cipher state `cip`.
+  * It recursively calls [[decryptOne]] and collects plaintexts. Unlike [[decryptOne]],
+  * this function cannot return leftover, the purpose of this function is to deal with
+  * the leftovers.
+  *
+  * The result of this attempt may be one of:
+  *
+  * - **Done**: All bytes and messages decrypted
+  * - **Demand**: Some messages decrypted but more encrypted bytes remain
+  * - **DecryptError** : Could not decrypt bytes due to bad HMAC tag or similar
+  * - **DecodeError**: Could not decode decrypted message message length
+  *
+  * @param ciphertext
+  * @param cip initial cipher state
+  * @return result of decryption with decrypted messages, if available
+  */
+def decryptAll(ciphertext: Chunk[Byte], cip: CipherState): Decrypted =
   @tailrec def go(
+      ciphertext: Chunk[Byte],
       cip: CipherState,
-      bytes: Chunk[Byte],
       agg: Chunk[ByteVector]
-  ): Decoded =
-    decodeOne(cip, bytes) match
-      case DecodedOne.DecryptError(m)        => Decoded.DecryptError(m)
-      case DecodedOne.DecodeError(m)         => Decoded.DecodeError(m)
-      case DecodedOne.Done(msg, s)           => Decoded.Done(agg :+ msg, s)
-      case DecodedOne.Demand(p, s)           => Decoded.Demand(agg, p, s)
-      case DecodedOne.Leftover(msg, left, s) => go(s, left, agg :+ msg)
-  // println("0 >>>>>>>> " + bs.size)
-  go(cip, bs, Chunk.empty)
+  ): Decrypted =
+    decryptOne(ciphertext, cip) match
+      case DecryptedOne.DecryptError(m)        => Decrypted.DecryptError(m)
+      case DecryptedOne.DecodeError(m)         => Decrypted.DecodeError(m)
+      case DecryptedOne.Done(pln, s)           => Decrypted.Done(agg :+ pln, s)
+      case DecryptedOne.Demand(part, s)        => Decrypted.Demand(agg, part, s)
+      case DecryptedOne.Leftover(pln, left, s) => go(left, s, agg :+ pln)
+  go(ciphertext, cip, Chunk.empty)
 
 final case class DecryptState(
     cip: CipherState,
@@ -189,14 +270,14 @@ def decrypt(rk: CipherState): ZTransducer[Any, String, Byte, ByteVector] =
             )
           case Some(bytes) =>
             ref.modify { case DecryptState(cip, dem) =>
-              decodeAll(cip, dem.fold(bytes)(_ ++ bytes)) match
-                case x @ Decoded.Done(cs, st) =>
+              decryptAll(dem.fold(bytes)(_ ++ bytes), cip) match
+                case Decrypted.Done(cs, st) =>
                   UIO((cs, DecryptState(st, None)))
-                case x @ Decoded.Demand(agg, part, st) =>
+                case Decrypted.Demand(agg, part, st) =>
                   UIO((agg, DecryptState(st, Some(part))))
-                case Decoded.DecryptError(x) =>
+                case Decrypted.DecryptError(x) =>
                   ZIO.fail(s"Decrypt Error: $x")
-                case Decoded.DecodeError(x) =>
+                case Decrypted.DecodeError(x) =>
                   ZIO.fail(s"Decode Error: $x")
             }
         }
