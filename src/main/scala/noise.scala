@@ -1,8 +1,5 @@
 package noise
 
-import javax.crypto.SecretKey
-import javax.crypto.spec.SecretKeySpec
-
 import fr.acinq.secp256k1.Secp256k1
 import org.bitcoins.crypto.CryptoUtil.sha256
 import org.bitcoins.crypto.*
@@ -12,7 +9,9 @@ import org.bouncycastle.crypto.params.KeyParameter
 import scodec.bits.ByteVector
 import zio.*
 
-import crypto.keygen.*
+import perun.crypto.DecryptionError
+import perun.crypto.keygen.*
+import perun.crypto.chacha
 
 /*
 XK:
@@ -63,14 +62,18 @@ enum CipherState:
       plaintext: ByteVector
   ): (ByteVector, CipherState) = this match
     case Empty             => (plaintext, Empty)
-    case Running(ck, k, n) => (encrypt(k, n, ad, plaintext), next)
+    case Running(ck, k, n) => (chacha.encrypt(k, n, ad, plaintext), next)
+
+  def decryptWithAd0(ciphertext: ByteVector) =
+    decryptWithAd(ByteVector.empty, ciphertext)
 
   def decryptWithAd(
       ad: ByteVector,
       ciphertext: ByteVector
-  ): (ByteVector, CipherState) = this match
-    case Empty             => (ciphertext, Empty)
-    case Running(ck, k, n) => (decrypt(k, n, ad, ciphertext), next)
+  ): Either[DecryptionError, (ByteVector, CipherState)] = this match
+    case Empty => Right((ciphertext, Empty))
+    case Running(ck, k, n) =>
+      chacha.decrypt(k, n, ad, ciphertext).map((_, next))
 
 final class SymmetricState(
     ck: ByteVector,
@@ -91,9 +94,14 @@ final class SymmetricState(
     val (ciphertext, nextCipher) = cipher.encryptWithAd(h, plaintext)
     (ciphertext, mixHash(ciphertext).cip(nextCipher))
 
-  def decryptAndHash(ciphertext: ByteVector): (ByteVector, SymmetricState) =
-    val (plaintext, nextCipher) = cipher.decryptWithAd(h, ciphertext)
-    (plaintext, mixHash(ciphertext).cip(nextCipher))
+  def decryptAndHash(
+      ciphertext: ByteVector
+  ): Either[DecryptionError, (ByteVector, SymmetricState)] =
+    cipher
+      .decryptWithAd(h, ciphertext)
+      .map((plaintext, nextCipher) =>
+        (plaintext, mixHash(ciphertext).cip(nextCipher))
+      )
 
   def split: (CipherState, CipherState) =
     val (tempk1, tempk2) = hkdf(ck, ByteVector.empty)
@@ -104,30 +112,6 @@ object SymmetricState:
     val ck = sha256(protocolName).bytes
     new SymmetricState(ck, ck, CipherState.Empty).mixHash(prologue)
   end apply
-
-def encrypt(
-    key: ByteVector,
-    nonce: BigInt,
-    ad: ByteVector,
-    plaintext: ByteVector
-) =
-  val ch = new chacha.ChaCha20Poly1305()
-  val n = Array.fill[Byte](4)(0) ++ nonce.toByteArray.reverse.padTo[Byte](8, 0)
-  ByteVector.view(
-    ch.encrypt(k2k(key), n, ad.toArray, plaintext.toArray)
-  )
-
-def decrypt(
-    key: ByteVector,
-    nonce: BigInt,
-    ad: ByteVector,
-    ciphertext: ByteVector
-) =
-  val ch = new chacha.ChaCha20Poly1305()
-  val n = Array.fill[Byte](4)(0) ++ nonce.toByteArray.reverse.padTo[Byte](8, 0)
-  ByteVector.view(
-    ch.decrypt(k2k(key), n, ad.toArray, ciphertext.toArray)
-  )
 
 def dh(v1: ECPrivateKey, v2: ECPublicKey) =
   ByteVector.view(Secp256k1.get().ecdh(v1.bytes.toArray, v2.bytes.toArray))
@@ -157,9 +141,12 @@ final class HandshakeState(
     val (ciphertext, ss) = this.symmetric.encryptAndHash(plaintext)
     (ciphertext, sym(_ => ss))
 
-  def decryptAndHash(ciphertext: ByteVector): (ByteVector, HandshakeState) =
-    val (plaintext, ss) = this.symmetric.decryptAndHash(ciphertext)
-    (plaintext, sym(_ => ss))
+  def decryptAndHash(
+      ciphertext: ByteVector
+  ): Either[DecryptionError, (ByteVector, HandshakeState)] =
+    this.symmetric
+      .decryptAndHash(ciphertext)
+      .map((plaintext, ss) => (plaintext, sym(_ => ss)))
 
   def sym(f: SymmetricState => SymmetricState) =
     new HandshakeState(s, e, rs, re, role, patterns, f(symmetric), expected)
@@ -299,33 +286,43 @@ final class HandshakeState(
     patterns.headOption match
       case None => ???
       case Some(tokens) =>
-        val hs = tokens.foldLeft(this) {
-          case (st, E) =>
+        val hs = tokens.foldLeft[Either[DecryptionError, HandshakeState]](
+          Right(this)
+        ) {
+          case (Right(st), E) =>
             val re = ECPublicKey.fromBytes(c)
-            st.setRe(re).mixHash(re)
-          case (st, EE) => st.mixKey(dh(st.e.get, st.re.get))
-          case (st, ES) =>
+            Right(st.setRe(re).mixHash(re))
+          case (Right(st), EE) =>
+            Right(st.mixKey(dh(st.e.get, st.re.get)))
+          case (Right(st), ES) =>
             if st.role == HandshakeRole.Initiator then
-              st.mixKey(dh(st.e.get, st.rs.get))
-            else st.mixKey(dh(st.s, st.re.get))
-          case (st, S) =>
-            val (plaintext, nextHs) = st.decryptAndHash(c)
-            nextHs.setRs(ECPublicKey.fromBytes(plaintext))
-          case (st, SE) =>
+              Right(st.mixKey(dh(st.e.get, st.rs.get)))
+            else Right(st.mixKey(dh(st.s, st.re.get)))
+          case (Right(st), S) =>
+            st.decryptAndHash(c)
+              .map((plaintext, nextHs) =>
+                nextHs.setRs(ECPublicKey.fromBytes(plaintext))
+              )
+          case (Right(st), SE) =>
             if st.role == HandshakeRole.Initiator then
-              st.mixKey(dh(st.s, st.re.get))
-            else st.mixKey(dh(st.e.get, st.rs.get))
+              Right(st.mixKey(dh(st.s, st.re.get)))
+            else Right(st.mixKey(dh(st.e.get, st.rs.get)))
+          case (left, _) => left
 
         }
-        val (plaintext, nextHs) = hs.decryptAndHash(t)
-        UIO.succeed {
-          nextHs.nextPattern match
-            case None =>
-              val (c1, c2) = nextHs.symmetric.split
-              HandshakeResult.Done(c1, c2)
-            case Some(st) =>
-              HandshakeResult.Continue(plaintext, st.nextExpected)
-        }
+        hs.flatMap(_.decryptAndHash(t)) match
+          case Right((plaintext, nextHs)) =>
+            UIO.succeed {
+              nextHs.nextPattern match
+                case None =>
+                  val (c1, c2) = nextHs.symmetric.split
+                  HandshakeResult.Done(c1, c2)
+                case Some(st) =>
+                  HandshakeResult.Continue(plaintext, st.nextExpected)
+            }
+
+          case Left(DecryptionError.BadTag) =>
+            IO.fail(HandshakeError.InvalidCiphertext)
 
 object HandshakeState:
   val initsym =
@@ -373,6 +370,3 @@ def hkdf(v1: ByteVector, v2: ByteVector): (ByteVector, ByteVector) =
   val output1 = hmacHash(tmp, ByteVector(1))
   val output2 = hmacHash(tmp, output1 ++ ByteVector(2))
   (output1, output2)
-
-def k2k(b: ByteVector): SecretKey =
-  new SecretKeySpec(b.toArray, "EC")

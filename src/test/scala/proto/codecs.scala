@@ -7,7 +7,7 @@ import zio.test.*
 
 object test extends DefaultRunnableSpec:
 
-  import perun.proto.UInt64
+  import perun.proto.UInt64.*
 
   import Assertion.*
 

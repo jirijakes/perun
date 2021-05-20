@@ -25,8 +25,10 @@ object lnz extends App:
   )
 
   import noise.*
-  import crypto.keygen.*
+  import perun.crypto.keygen.*
   import util.*
+
+  import perun.db.*
 
   val initiator = HandshakeState.initiator(rs, ls1)
   val responder = HandshakeState.responder(ls1)
@@ -108,7 +110,9 @@ object lnz extends App:
               .forkDaemon
           }
       }
-      .provideCustomLayer(crypto.keygen.live)
+      .provideCustomLayer(
+        perun.crypto.keygen.live ++ Store.live("jdbc:hsqldb:file:testdb")
+      )
       .exitCode
 
 end lnz

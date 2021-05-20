@@ -1,4 +1,4 @@
-package crypto.keygen
+package perun.crypto.keygen
 
 import org.bitcoins.crypto.ECPrivateKey
 import zio.*

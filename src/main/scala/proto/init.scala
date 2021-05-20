@@ -6,14 +6,14 @@ import scodec.bits.ByteVector
 
 import perun.proto.codecs.*
 import perun.proto.features.*
+import perun.proto.blockchain.*
 import perun.proto.tlv.*
 
-final case class Init(features: Features, s: List[String])
+final case class Init(features: Features, s: List[Chain])
 
-val tlvNetworks: Codec[List[String]] =
-  list(bytes(32).xmap(_.toHex, ByteVector.fromValidHex(_)))
+val tlvNetworks: Codec[List[Chain]] = list(chain)
 
-val tlvInit: Codec[List[String]] = tlvStream.exmap(
+val tlvInit: Codec[List[Chain]] = tlvStream.exmap(
   x =>
     for
       a <- Attempt.fromOption(x.find(1), Err("aaaaa"))

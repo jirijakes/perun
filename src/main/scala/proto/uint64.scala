@@ -95,6 +95,9 @@ object UInt64:
     identity
   )
 
+  val bigsizeBits: Codec[BitVector] =
+    bigsize.xmap(_.toByteVector.toBitVector, bi => apply(bi.toByteVector))
+
   // format: off
   val tbigsize: Codec[UInt64] = Codec(
     u => {

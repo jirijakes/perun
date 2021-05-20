@@ -117,5 +117,5 @@ def receivePong(ping: Ping, pong: Pong): ZIO[Console, Nothing, Unit] =
   if ping.num != pong.len then
     putStrLn(
       s"Pong did not contain ${ping.num} bytes as expected but ${pong.len}."
-    )
+    ).orDie
   else ZIO.unit

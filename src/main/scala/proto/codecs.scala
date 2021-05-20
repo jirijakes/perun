@@ -36,6 +36,29 @@ val error: Codec[Error] =
       }
     )
 
+case class ShortChannelId(block: Int, transaction: Int, output: Int):
+  override def toString =
+    import fansi.Color.*
+    s"${Cyan(block.toString)}${DarkGray("x")}${Yellow(
+      transaction.toString
+    )}${DarkGray("x")}${LightGreen(output.toString)}"
+
+given Ordering[ShortChannelId] =
+  Ordering.by(s => (s.block, s.transaction, s.output))
+
+val shortChannelId: Codec[ShortChannelId] =
+  (
+    ("block_height" | uint(24)) ::
+      ("transaction" | uint(24)) ::
+      ("output" | uint(16))
+  ).as[ShortChannelId]
+
+val encodedShortIds: Codec[Vector[ShortChannelId]] =
+  discriminated
+    .by(uint8)
+    .typecase(0, vector(shortChannelId).xmap(identity, _.sorted))
+    .typecase(1, zlib(vector(shortChannelId)).xmap(identity, _.sorted))
+
 // export UInt64.uint64
 // export UInt64.bigsize
 // export perun.proto.init.codec as init

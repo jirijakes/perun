@@ -11,6 +11,9 @@ enum Message:
   case Init(m: init.Init)
   case Ping(m: ping.Ping)
   case Pong(m: ping.Pong)
+  case QueryChanellRange(m: gossip.QueryChannelRange)
+  case ReplyChannelRange(m: gossip.ReplyChannelRange)
+  case GossipTimestampFilter(m: gossip.GossipTimestampFilter)
 
 val messageCodec: Codec[Message] =
   discriminated[Message]
@@ -18,10 +21,19 @@ val messageCodec: Codec[Message] =
     .caseP(16) { case Message.Init(m) => m }(Message.Init.apply)(init.init)
     .caseP(18) { case Message.Ping(m) => m }(Message.Ping.apply)(ping.ping)
     .caseP(19) { case Message.Pong(m) => m }(Message.Pong.apply)(ping.pong)
+    .caseP(263) { case Message.QueryChanellRange(m) => m }(
+      Message.QueryChanellRange.apply
+    )(gossip.queryChannelRange)
+    .caseP(264) { case Message.ReplyChannelRange(m) => m }(
+      Message.ReplyChannelRange.apply
+    )(gossip.replyChannelRange)
+    .caseP(265) { case Message.GossipTimestampFilter(m) => m }(
+      Message.GossipTimestampFilter.apply
+    )(gossip.gossipTimestampFilter)
 
 enum Response:
-   case Send(m: Message)
-   case Ignore
+  case Send(m: Message)
+  case Ignore
 
 def decode(b: ByteVector): Either[String, Message] =
   messageCodec.decodeValue(b.toBitVector).toEither.left.map(_.toString)
