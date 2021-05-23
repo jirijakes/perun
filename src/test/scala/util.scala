@@ -41,4 +41,4 @@ object util extends DefaultRunnableSpec:
           }
         )
       )
-    )
+    ) @@ TestAspect.ignore

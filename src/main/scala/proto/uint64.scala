@@ -11,15 +11,7 @@ import scodec.codecs.*
  * BIG THANKS TO ACINQ/ECLAIR.
  */
 
-opaque type UInt64 = Long
-
-object UInt64:
-  def apply(b: ByteVector): UInt64 = b.toLong(signed = false)
-  def apply(i: Int): UInt64 = i.toLong
-  def apply(l: Long): UInt64 = l
-
-  extension (u: UInt64) def toByteVector = ByteVector.fromLong(u)
-
+object uint64:
   /** Ensures that value is minimally encoded. “A value is said to be minimally encoded
     * if it could not be encoded using fewer bytes.”
     *
@@ -36,10 +28,13 @@ object UInt64:
       Attempt.successful
     )
 
-  val maxValue = UInt64(ByteVector.fromValidHex("ffffffffffffffff"))
+  // val maxValue = UInt64(ByteVector.fromValidHex("ffffffffffffffff"))
 
-  val uint64: Codec[UInt64] =
-    bytes(8).xmap(b => UInt64(b), a => a.toByteVector.padLeft(8))
+  val uint64: Codec[BigInt] =
+    bytes(8).xmap(
+      b => BigInt(b.toArray),
+      i => ByteVector.view(i.toByteArray).padLeft(8)
+    )
 
   /** Discriminator codec with a default fallback codec (of the same type).
     */
@@ -57,15 +52,15 @@ object UInt64:
       }
 
   // TODO: Does this need its own value? Is this needed or should be joined with `bigsize`?
-  val bigsize64: Codec[UInt64] =
+  val bigsize64: Codec[BigInt] =
     discriminatorWithDefault(
-      discriminated[UInt64]
+      discriminated[BigInt]
         .by(uint8L)
         .subcaseP(0xff) { case i if i >= 0x100000000L => i }(
           minimally(uint64, 0x100000000L)
         )
         .subcaseP(0xfe) { case i if i >= 0x10000 => i }(
-          minimally(uint32, 0x10000)
+          minimally(uint32.xmap(_.toBigInt, _.toLong), 0x10000)
         )
         .subcaseP(0xfd) { case i if i >= 0xfd => i }(
           minimally(uint16.xmap(_.toLong, _.toInt), 0xfd)
@@ -90,16 +85,18 @@ object UInt64:
     */
   val bigsize: Codec[Long] = bigsize64.narrow(
     l =>
-      if l <= Long.MaxValue then Attempt.successful(l)
+      if l <= Long.MaxValue then Attempt.successful(l.toLong)
       else Attempt.failure(Err(s"overflow for value $l")),
     identity
   )
 
   val bigsizeBits: Codec[BitVector] =
-    bigsize.xmap(_.toByteVector.toBitVector, bi => apply(bi.toByteVector))
+    bigsize.xmap(BitVector.fromLong(_), _.toLong(signed = false))
 
+/*
+  // TODO: Not sure when this might be needed.
   // format: off
-  val tbigsize: Codec[UInt64] = Codec(
+  val tbigsize: Codec[BigInt] = Codec(
     u => {
       val b = u match {
         case u if u < 0x01                => ByteVector.empty
@@ -128,3 +125,4 @@ object UInt64:
     }
   )
   // format: on
+ */

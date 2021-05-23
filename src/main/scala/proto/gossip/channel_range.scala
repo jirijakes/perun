@@ -5,10 +5,10 @@ import scodec.*
 import scodec.bits.{BitVector, ByteVector}
 import scodec.codecs.*
 
-import perun.proto.UInt64.*
 import perun.proto.blockchain.*
 import perun.proto.codecs.*
 import perun.proto.tlv.*
+import perun.proto.uint64.*
 
 final case class QueryChannelRange(
     chain: Chain,

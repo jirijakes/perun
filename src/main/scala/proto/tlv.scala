@@ -4,8 +4,8 @@ import scodec.bits.*
 import scodec.codecs.*
 import scodec.{Attempt, Codec, Err}
 
-import perun.proto.UInt64.*
 import perun.proto.codecs.*
+import perun.proto.uint64.*
 
 opaque type TlvStream = Map[Long, ByteVector]
 

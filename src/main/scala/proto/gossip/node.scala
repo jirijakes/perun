@@ -8,12 +8,11 @@ import scodec.Codec
 import scodec.bits.ByteVector
 import scodec.codecs.*
 
-import perun.proto.UInt64
-import perun.proto.UInt64.*
 import perun.proto.blockchain.*
 import perun.proto.codecs.*
 import perun.proto.features.*
 import perun.proto.signed.*
+import perun.proto.uint64.*
 
 final case class NodeAnnouncement(
     signature: Signature,
@@ -111,10 +110,10 @@ final case class ChannelUpdate(
     messageFlags: Byte,
     channelFlags: Byte,
     cltvExpiryDelta: Int,
-    htlcMinimumMsat: UInt64,
+    htlcMinimumMsat: BigInt,
     feeBaseMsat: Long,
     feeProportionalMillionths: Long,
-    htlcMaximumMsat: UInt64
+    htlcMaximumMsat: BigInt
 )
 
 val channelUpdate: Codec[ChannelUpdate] =
