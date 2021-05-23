@@ -1,0 +1,7 @@
+#+TITLE: TODO
+
+* Assorted [0/3]
+
+  - [ ] Make ~uint64~ be ~BigInt~, ~bigsize~ will remain ~Long~
+  - [ ] Try codec derivation (~Proto[A]~, ~val coded = proto[A]~)
+  - [ ] Add pretty print colorful logging (~typeleve/paiges~?)

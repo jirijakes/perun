@@ -8,7 +8,7 @@ opaque type Features = ByteVector
 
 // TODO: remove
 object Features:
-    def apply(b: ByteVector): Features = b
+  def apply(b: ByteVector): Features = b
 
 enum Feature(name: String, description: String):
   case InitialRoutingSync
@@ -17,7 +17,9 @@ enum Feature(name: String, description: String):
         "Sending node needs a complete routing information dump"
       )
 
-val features: Codec[Features] =
+val features: Codec[Features] = variableSizeBytes("flen" | uint16, bytes)
+
+val features2: Codec[Features] =
   (
     variableSizeBytes("gflen" | uint16, bytes) ::
       variableSizeBytes("flen" | uint16, bytes)

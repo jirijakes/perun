@@ -1,18 +1,58 @@
 import scodec.bits.*
 
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
+// import org.apache.tinkerpop.gremlin.process.traversal.*
+// import org.apache.tinkerpop.gremlin.process.traversal.IO
+import org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal
+import org.apache.tinkerpop.gremlin.process.traversal.Operator.*
+import org.apache.tinkerpop.gremlin.process.traversal.Order.*
+import org.apache.tinkerpop.gremlin.process.traversal.P.*
+import org.apache.tinkerpop.gremlin.process.traversal.Pop.*
+import org.apache.tinkerpop.gremlin.process.traversal.SackFunctions.*
+import org.apache.tinkerpop.gremlin.process.traversal.Scope.*
+import org.apache.tinkerpop.gremlin.process.traversal.TextP.*
+import org.apache.tinkerpop.gremlin.structure.Column.*
+import org.apache.tinkerpop.gremlin.structure.Direction.*
+import org.apache.tinkerpop.gremlin.structure.T.*
+import org.apache.tinkerpop.gremlin.structure.Vertex
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.*
+
 import zio.*
 import zio.console.*
 
-object pokus extends App:
+import perun.db.*
+import perun.db2.orient.*
 
-  // 001000022200000d8000000000000000002822aaa20120f61eee3b63a380a477a063af32b2bbc97c9ff9f01f2c4225e973988108000000
+import scala.jdk.CollectionConverters.*
 
-  val x = perun.proto.init.init.decode(
-    hex"00022200000d8000000000000000002822aaa20120f61eee3b63a380a477a063af32b2bbc97c9ff9f01f2c4225e973988108000000".toBitVector
-  )
+object pokus:
 
-  // 0109f61eee3b63a380a477a063af32b2bbc97c9ff9f01f2c4225e97398810800000000000000ffffffff
+  def main(args: Array[String]) =
+    val g = traversal().withEmbedded(TinkerGraph.open())
+    // val p1 = g.addV("person").property("name", "John")
 
-  val res = x
+    val _ = g.addV("node").property("id", "node 2").next()
 
-  def run(args: List[String]) = putStrLn(res.toString).exitCode
+    val n1 = V()
+      .has("node", "id", "node 1")
+      .fold()
+      .coalesce(
+        unfold(),
+        addV("node").property("id", "node 1").property("new", true)
+      )
+
+    val n2 = V()
+      .has("node", "id", "node 2")
+      .fold()
+      .coalesce(
+        unfold(),
+        addV("node").property("id", "node 2").property("new", true)
+      )
+
+    val c = g.addE("channel").from(n1).to(n2).next()
+
+    println("#> " + g.V().properties().toList().asScala.toList)
+    println("#> " + g.E().toList().asScala.toList)
+
+    g.close()

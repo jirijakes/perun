@@ -14,6 +14,8 @@ enum Message:
   case QueryChanellRange(m: gossip.QueryChannelRange)
   case ReplyChannelRange(m: gossip.ReplyChannelRange)
   case GossipTimestampFilter(m: gossip.GossipTimestampFilter)
+  case NodeAnnouncement(m: gossip.NodeAnnouncement)
+  case ChannelAnnouncement(m: gossip.ChannelAnnouncement)
 
 val messageCodec: Codec[Message] =
   discriminated[Message]
@@ -21,6 +23,12 @@ val messageCodec: Codec[Message] =
     .caseP(16) { case Message.Init(m) => m }(Message.Init.apply)(init.init)
     .caseP(18) { case Message.Ping(m) => m }(Message.Ping.apply)(ping.ping)
     .caseP(19) { case Message.Pong(m) => m }(Message.Pong.apply)(ping.pong)
+    .caseP(256) { case Message.ChannelAnnouncement(m) => m }(
+      Message.ChannelAnnouncement.apply
+    )(gossip.channelAnnouncement)
+    .caseP(257) { case Message.NodeAnnouncement(m) => m }(
+      Message.NodeAnnouncement.apply
+    )(gossip.nodeAnnouncement)
     .caseP(263) { case Message.QueryChanellRange(m) => m }(
       Message.QueryChanellRange.apply
     )(gossip.queryChannelRange)

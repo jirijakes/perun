@@ -34,7 +34,7 @@ def start(
     close: ZIO[Any, Nothing, Unit],
     rk: CipherState,
     sk: CipherState
-): ZIO[Store & Clock & Console, Nothing, Unit] =
+): ZIO[Store & Clock & Console & P2P, Nothing, Unit] =
   for
     state <- Ref.make(State(None))
     // _ <- execute("CREATE TABLE prd (id INT)").orDie
@@ -49,6 +49,9 @@ def start(
         case Message.Init(_)              => UIO(Response.Ignore)
         case Message.Pong(_)              => UIO(Response.Ignore)
         case _: Message.ReplyChannelRange => UIO(Response.Ignore)
+        case Message.NodeAnnouncement(n)  => offerNode(n).as(Response.Ignore)
+        case Message.ChannelAnnouncement(c) =>
+          offerChannel(c).as(Response.Ignore)
       }
       .foreach {
         case Response.Ignore  => ZIO.unit
@@ -60,7 +63,7 @@ def start(
       .map(perun.proto.decode)
       .foreach {
         case Right(m) => putStrLn(s"Received: $m") *> hr.publish(m)
-        case Left(e)  => putStrLn("Error: " + e)
+        case Left(e)  => ZIO.unit // putStrLn("Error: " + e)
       }
       .fork
     f3 <- ZStream
@@ -253,14 +256,21 @@ def decryptAll(ciphertext: Chunk[Byte], cip: CipherState): Decrypted =
       case DecryptedOne.Leftover(pln, left, s) => go(left, s, agg :+ pln)
   go(ciphertext, cip, Chunk.empty)
 
+/** State of [[decrypt]] transducer. Besides a necessary cipher state,
+  * it holds, if available, an incomplete encrypted message that is expecting
+  * more bytes.
+  *
+  * @param cip continuosly updated cipher state
+  * @param demand incomplete encrypted message, if avaible from previous step
+  */
 final case class DecryptState(
     cip: CipherState,
     demand: Option[Chunk[Byte]]
 )
 
-def decrypt(rk: CipherState): ZTransducer[Any, String, Byte, ByteVector] =
+def decrypt(rk: CipherState): Transducer[String, Byte, ByteVector] =
   ZTransducer {
-    ZRefM
+    RefM
       .makeManaged(DecryptState(rk, None))
       .map { ref =>
         {
@@ -284,7 +294,7 @@ def decrypt(rk: CipherState): ZTransducer[Any, String, Byte, ByteVector] =
       }
   }
 
-def encrypt(sk: CipherState): ZTransducer[Any, Nothing, ByteVector, Byte] =
+def encrypt(sk: CipherState): Transducer[Nothing, ByteVector, Byte] =
   ZTransducer {
     ZRef
       .makeManaged(sk)

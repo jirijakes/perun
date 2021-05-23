@@ -23,7 +23,7 @@ object noise extends DefaultRunnableSpec:
 
         val out = ZSink.foreachChunk[Any, Throwable, Byte](_ => ZIO.unit).as(1)
 
-        val keygen = crypto.keygen.repeat(
+        val keygen = perun.crypto.keygen.repeat(
           "2222222222222222222222222222222222222222222222222222222222222222"
         )
         val responder =

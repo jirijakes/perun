@@ -110,8 +110,11 @@ object lnz extends App:
               .forkDaemon
           }
       }
+      .onInterrupt(ZIO.effectTotal(println("DOOONE")))
       .provideCustomLayer(
-        perun.crypto.keygen.live ++ Store.live("jdbc:hsqldb:file:testdb")
+        perun.crypto.keygen.live ++
+          Store.live("jdbc:hsqldb:file:testdb") ++
+          tinkerpop.inMemory
       )
       .exitCode
 

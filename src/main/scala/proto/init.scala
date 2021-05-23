@@ -23,4 +23,4 @@ val tlvInit: Codec[List[Chain]] = tlvStream.exmap(
 )
 
 val init: Codec[Init] =
-  (("features" | features) :: ("tlv_stream" | tlvInit)).as[Init]
+  (("features" | features2) :: ("tlv_stream" | tlvInit)).as[Init]
