@@ -9,16 +9,28 @@ import scodec.bits.ByteVector
 
 import perun.crypto.DecryptionError
 
-def encrypt(
+def encryptPad(
     key: ByteVector,
     nonce: BigInt,
     ad: ByteVector,
     plaintext: ByteVector
 ): ByteVector =
+  encrypt(
+    key,
+    ByteVector.view(Array.fill[Byte](4)(0) ++
+      nonce.toByteArray.reverse.padTo[Byte](8, 0)),
+    ad,
+    plaintext
+  )
+
+def encrypt(
+    key: ByteVector,
+    nonce: ByteVector,
+    ad: ByteVector,
+    plaintext: ByteVector
+): ByteVector =
   val cipher = newCipher
-  val n = Array.fill[Byte](4)(0) ++
-    nonce.toByteArray.reverse.padTo[Byte](8, 0)
-  val iv = new IvParameterSpec(n)
+  val iv = new IvParameterSpec(nonce.toArray)
 
   // TODO: These can also throw exception
   cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key.toArray, "EC"), iv)
@@ -26,16 +38,28 @@ def encrypt(
 
   ByteVector.view(cipher.doFinal(plaintext.toArray))
 
-def decrypt(
+def decryptPad(
     key: ByteVector,
     nonce: BigInt,
     ad: ByteVector,
     ciphertext: ByteVector
 ): Either[DecryptionError, ByteVector] =
+  decrypt(
+    key,
+    ByteVector.view(Array.fill[Byte](4)(0) ++
+      nonce.toByteArray.reverse.padTo[Byte](8, 0)),
+    ad,
+    ciphertext
+  )
+
+def decrypt(
+    key: ByteVector,
+    nonce: ByteVector,
+    ad: ByteVector,
+    ciphertext: ByteVector
+): Either[DecryptionError, ByteVector] =
   val cipher = newCipher
-  val n = Array.fill[Byte](4)(0) ++
-    nonce.toByteArray.reverse.padTo[Byte](8, 0)
-  val iv = new IvParameterSpec(n)
+  val iv = new IvParameterSpec(nonce.toArray)
 
   // TODO: These can also throw exception
   cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key.toArray, "EC"), iv)

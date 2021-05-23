@@ -1,6 +1,6 @@
 #+TITLE: TODO
 
-* Assorted [1/7]
+* Assorted [1/8]
 
   - [ ] Make ~uint64~ represented by ~BigInt~, ~bigsize~ will remain ~Long~
   - [ ] Solve verification of signatures in gossip messages
@@ -12,3 +12,4 @@
     - https://github.com/zio/zio-json/blob/develop/.scalafix.conf
     - https://scalacenter.github.io/scalafix/docs/users/installation.html
   - [ ] organize packages and rename project
+  - [ ] Move to zio-json when 3.0.0

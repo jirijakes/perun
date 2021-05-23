@@ -61,7 +61,7 @@ enum CipherState:
       plaintext: ByteVector
   ): (ByteVector, CipherState) = this match
     case Empty             => (plaintext, Empty)
-    case Running(ck, k, n) => (chacha.encrypt(k, n, ad, plaintext), next)
+    case Running(ck, k, n) => (chacha.encryptPad(k, n, ad, plaintext), next)
 
   def decryptWithAd0(ciphertext: ByteVector) =
     decryptWithAd(ByteVector.empty, ciphertext)
@@ -72,7 +72,7 @@ enum CipherState:
   ): Either[DecryptionError, (ByteVector, CipherState)] = this match
     case Empty => Right((ciphertext, Empty))
     case Running(ck, k, n) =>
-      chacha.decrypt(k, n, ad, ciphertext).map((_, next))
+      chacha.decryptPad(k, n, ad, ciphertext).map((_, next))
 
 final class SymmetricState(
     ck: ByteVector,
