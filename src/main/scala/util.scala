@@ -1,7 +1,7 @@
 package util
 
-import zio.{Chunk, ZRef}
 import zio.stream.ZTransducer
+import zio.{Chunk, ZRef}
 
 /** Emits chunks of lengths specified by `lengths` and then the rest of the stream.
   *

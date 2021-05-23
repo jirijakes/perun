@@ -1,9 +1,10 @@
 package perun.crypto.chacha
 
-import java.nio.ByteBuffer;
-import java.security.SecureRandom;
-import javax.crypto.{Cipher, SecretKey}
+import java.nio.ByteBuffer
+import java.security.SecureRandom
 import javax.crypto.spec.{IvParameterSpec, SecretKeySpec}
+import javax.crypto.{Cipher, SecretKey}
+
 import scodec.bits.ByteVector
 
 import perun.crypto.DecryptionError

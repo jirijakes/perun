@@ -1,16 +1,19 @@
 package perun.proto.gossip
 
+import java.time.LocalDate
+
 import org.hsqldb.index.NodeAVLDisk
 import org.typelevel.paiges.*
+import scodec.Codec
+import scodec.bits.ByteVector
+import scodec.codecs.*
+
 import perun.proto.UInt64
 import perun.proto.UInt64.*
 import perun.proto.blockchain.*
 import perun.proto.codecs.*
 import perun.proto.features.*
 import perun.proto.signed.*
-import scodec.Codec
-import scodec.bits.ByteVector
-import scodec.codecs.*
 
 final case class NodeAnnouncement(
     signature: Signature,

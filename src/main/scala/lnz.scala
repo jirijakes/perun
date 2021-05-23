@@ -1,8 +1,6 @@
 import scodec.bits.*
-
 import zio.*
 import zio.console.*
-// import zio.logging.*
 import zio.stream.*
 
 object lnz extends App:

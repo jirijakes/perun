@@ -1,8 +1,8 @@
 package perun.proto.features
 
 import scodec.Codec
-import scodec.codecs.*
 import scodec.bits.ByteVector
+import scodec.codecs.*
 
 opaque type Features = ByteVector
 

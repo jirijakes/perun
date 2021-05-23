@@ -1,11 +1,11 @@
 package perun.proto
 
-import scodec.*
-import scodec.codecs.*
-import scodec.bits.{BitVector, ByteVector}
+import scala.math.BigDecimal.long2bigDecimal
+import scala.math.Ordering.Implicits.infixOrderingOps
 
-import math.BigDecimal.long2bigDecimal
-import math.Ordering.Implicits.infixOrderingOps
+import scodec.*
+import scodec.bits.{BitVector, ByteVector}
+import scodec.codecs.*
 
 /*
  * BIG THANKS TO ACINQ/ECLAIR.

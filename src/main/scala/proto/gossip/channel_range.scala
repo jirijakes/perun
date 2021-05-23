@@ -2,12 +2,12 @@ package perun.proto.gossip
 
 import com.softwaremill.quicklens.*
 import scodec.*
-import scodec.codecs.*
 import scodec.bits.{BitVector, ByteVector}
+import scodec.codecs.*
 
+import perun.proto.UInt64.*
 import perun.proto.blockchain.*
 import perun.proto.codecs.*
-import perun.proto.UInt64.*
 import perun.proto.tlv.*
 
 final case class QueryChannelRange(

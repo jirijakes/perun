@@ -1,14 +1,13 @@
 package perun.proto.codecs
 
-import java.net.{InetAddress, Inet4Address, Inet6Address}
+import java.net.{Inet4Address, Inet6Address, InetAddress}
 
-import org.bitcoins.crypto.ECPublicKey
+import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 import scodec.*
 import scodec.bits.*
 import scodec.codecs.*
 
 import perun.proto.*
-import org.bitcoins.crypto.ECDigitalSignature
 
 opaque type ChannelId = ByteVector
 

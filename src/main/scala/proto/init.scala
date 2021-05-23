@@ -1,12 +1,12 @@
 package perun.proto.init
 
 import scodec.*
-import scodec.codecs.*
 import scodec.bits.ByteVector
+import scodec.codecs.*
 
+import perun.proto.blockchain.*
 import perun.proto.codecs.*
 import perun.proto.features.*
-import perun.proto.blockchain.*
 import perun.proto.tlv.*
 
 final case class Init(features: Features, s: List[Chain])

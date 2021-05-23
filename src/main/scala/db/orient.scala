@@ -1,13 +1,12 @@
 package perun.db2.orient
 
 import com.orientechnologies.orient.core.metadata.schema.OType
+import com.orientechnologies.orient.core.sql.OCommandSQL
 import com.tinkerpop.blueprints.impls.orient.*
 import zio.*
 
 import perun.db.*
-import perun.proto.gossip.NodeAnnouncement
-import com.orientechnologies.orient.core.sql.OCommandSQL
-import perun.proto.gossip.ChannelAnnouncement
+import perun.proto.gossip.{ChannelAnnouncement, NodeAnnouncement}
 
 def embedded: ZLayer[Any, Throwable, P2P] =
   Managed

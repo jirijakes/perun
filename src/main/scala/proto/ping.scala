@@ -3,7 +3,6 @@ package perun.proto.ping
 import scodec.*
 import scodec.bits.ByteVector
 import scodec.codecs.*
-
 import zio.*
 import zio.clock.*
 import zio.console.*

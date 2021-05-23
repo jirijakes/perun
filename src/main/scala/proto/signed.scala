@@ -1,12 +1,11 @@
 package perun.proto.signed
 
 import fr.acinq.secp256k1.Secp256k1
-import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.crypto.CryptoUtil.doubleSHA256
+import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 import scodec.*
 import scodec.bits.*
 import scodec.codecs.*
-import org.bitcoins.crypto.ECDigitalSignature
 
 import perun.proto.codecs.*
 

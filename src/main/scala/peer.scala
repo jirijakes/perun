@@ -1,28 +1,23 @@
 package perun.peer
 
+import scala.annotation.tailrec
+
+import noise.*
 import scodec.*
+import scodec.bits.{hex, _}
 import scodec.codecs.uint16
-import scodec.bits.*
-import scodec.bits.hex
 import zio.*
 import zio.clock.Clock
 import zio.console.*
 import zio.duration.*
 import zio.stream.*
 
-import noise.*
-
 import perun.db.*
-import perun.proto.{Message, Response}
 import perun.proto.blockchain.Chain
 import perun.proto.features.Features
+import perun.proto.gossip.{GossipTimestampFilter, QueryChannelRange, receiveMessage => receiveGTF}
 import perun.proto.init.Init
-import perun.proto.gossip.{
-  GossipTimestampFilter,
-  receiveMessage as receiveGTF,
-  QueryChannelRange
-}
-import scala.annotation.tailrec
+import perun.proto.{Message, Response}
 
 final case class State(
     gossipFilter: Option[GossipTimestampFilter]

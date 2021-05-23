@@ -1,10 +1,11 @@
 package perun.db
 
 import java.sql.{DriverManager, ResultSet}
+
 import org.hsqldb.*
-import zio.{blocking as _, *}
 import zio.blocking.*
 import zio.stream.*
+import zio.{blocking as _, *}
 
 type Store = Has[Store.Service]
 

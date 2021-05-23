@@ -1,8 +1,5 @@
 package perun.db.tinkerpop
 
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*
-// import org.apache.tinkerpop.gremlin.process.traversal.*
-// import org.apache.tinkerpop.gremlin.process.traversal.IO
 import org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal
 import org.apache.tinkerpop.gremlin.process.traversal.IO.graphml
 import org.apache.tinkerpop.gremlin.process.traversal.Operator.*
@@ -12,18 +9,18 @@ import org.apache.tinkerpop.gremlin.process.traversal.Pop.*
 import org.apache.tinkerpop.gremlin.process.traversal.SackFunctions.*
 import org.apache.tinkerpop.gremlin.process.traversal.Scope.*
 import org.apache.tinkerpop.gremlin.process.traversal.TextP.*
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.*
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*
 import org.apache.tinkerpop.gremlin.structure.Column.*
 import org.apache.tinkerpop.gremlin.structure.Direction.*
 import org.apache.tinkerpop.gremlin.structure.T.*
 import org.apache.tinkerpop.gremlin.structure.Vertex
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.*
-
 import zio.*
+
 import perun.db.P2P
 import perun.proto.codecs.*
-import perun.proto.gossip.NodeAnnouncement
-import perun.proto.gossip.ChannelAnnouncement
+import perun.proto.gossip.{ChannelAnnouncement, NodeAnnouncement}
 
 def gremlin: ZLayer[Has[GraphTraversalSource], Nothing, P2P] =
   ZLayer.fromService(g => new GremlinP2P(g))

@@ -1,8 +1,5 @@
-import scodec.bits.*
+import scala.jdk.CollectionConverters.*
 
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
-// import org.apache.tinkerpop.gremlin.process.traversal.*
-// import org.apache.tinkerpop.gremlin.process.traversal.IO
 import org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal
 import org.apache.tinkerpop.gremlin.process.traversal.Operator.*
 import org.apache.tinkerpop.gremlin.process.traversal.Order.*
@@ -11,20 +8,19 @@ import org.apache.tinkerpop.gremlin.process.traversal.Pop.*
 import org.apache.tinkerpop.gremlin.process.traversal.SackFunctions.*
 import org.apache.tinkerpop.gremlin.process.traversal.Scope.*
 import org.apache.tinkerpop.gremlin.process.traversal.TextP.*
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*
 import org.apache.tinkerpop.gremlin.structure.Column.*
 import org.apache.tinkerpop.gremlin.structure.Direction.*
 import org.apache.tinkerpop.gremlin.structure.T.*
 import org.apache.tinkerpop.gremlin.structure.Vertex
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.*
-
+import scodec.bits.*
 import zio.*
 import zio.console.*
 
 import perun.db.*
 import perun.db2.orient.*
-
-import scala.jdk.CollectionConverters.*
 
 object pokus:
 

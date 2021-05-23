@@ -6,6 +6,11 @@ resolvers += Resolver.publishMavenLocal
 
 val zioVersion = "1.0.8" //+51-b1a3621b-SNAPSHOT"
 
+ThisBuild / scalafixDependencies ++= List(
+  "com.github.liancheng" %% "organize-imports" % "0.5.0",
+  "com.github.vovapolu"  %% "scaluzzi"         % "0.1.18"
+)
+
 libraryDependencies ++= List(
   "dev.zio" %% "zio" % zioVersion,
   "dev.zio" %% "zio-streams" % zioVersion,
@@ -36,4 +41,9 @@ testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 
 enablePlugins(JavaAppPackaging)
 
+// Pass SIGINT into running app to let it gracefully shutdown
 Global / cancelable := false
+
+semanticdbEnabled := true
+
+scalacOptions ++= List("-explain", "-new-syntax", "-Xlint:unused", "-Wunused:imports")

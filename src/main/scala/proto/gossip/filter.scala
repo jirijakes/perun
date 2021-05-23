@@ -2,8 +2,8 @@ package perun.proto.gossip
 
 import com.softwaremill.quicklens._
 import scodec.*
-import scodec.codecs.*
 import scodec.bits.ByteVector
+import scodec.codecs.*
 
 import perun.peer.State
 import perun.proto.blockchain.*
