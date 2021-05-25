@@ -34,7 +34,7 @@ libraryDependencies ++= List(
   "com.orientechnologies" % "orientdb-graphdb" % "3.2.0",
   "org.apache.tinkerpop" % "gremlin-core" % "3.5.0",
   "org.apache.tinkerpop" % "tinkergraph-gremlin" % "3.5.0",
-  "org.typelevel" %% "paiges-core" % "0.4.1+28-27faa7b1+20210523-0845",
+  "org.typelevel" % "paiges-core_2.13" % "0.4.1",
   "io.circe" % "circe-core_2.13" % "0.12.3",  // 0.13.0 depends on Cats
   "io.circe" % "circe-parser_2.13" % "0.12.3",
 )
