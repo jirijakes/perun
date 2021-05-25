@@ -1,10 +1,10 @@
 #+TITLE: TODO
 
-* Assorted [3/8]
+* Assorted [4/8]
 
   - [X] Make ~uint64~ represented by ~BigInt~, ~bigsize~ will remain ~Long~
   - [ ] Solve verification of signatures in gossip messages
-  - [ ] Try codec derivation (~Proto[A]~, ~val coded = proto[A]~)
+  - [X] Try codec derivation (~Proto[A]~, ~val coded = proto[A]~)
   - [ ] Add pretty print colorful logging (~typeleve/paiges~?)
   - [X] Add chacha test vector tests
     - [[file:../src/test/scala/crypto/chacha.scala]]

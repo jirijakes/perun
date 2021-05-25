@@ -133,6 +133,14 @@ val encodedShortIds: Codec[Vector[ShortChannelId]] =
     .typecase(0, vector(shortChannelId).xmap(identity, _.sorted))
     .typecase(1, zlib(vector(shortChannelId)).xmap(identity, _.sorted))
 
+opaque type Msat = BigInt
+
+val msat: Codec[Msat] = uint64.uint64
+
+opaque type Timestamp = Long
+
+val timestamp: Codec[Timestamp] = uint32
+
 // export UInt64.uint64
 // export UInt64.bigsize
 // export perun.proto.init.codec as init

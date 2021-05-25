@@ -11,13 +11,14 @@ import scodec.codecs.*
 import perun.proto.blockchain.*
 import perun.proto.codecs.*
 import perun.proto.features.*
+import perun.proto.generic.proto
 import perun.proto.signed.*
 import perun.proto.uint64.*
 
 final case class NodeAnnouncement(
     signature: Signature,
     features: Features,
-    timestamp: Long,
+    timestamp: Timestamp,
     nodeId: NodeId,
     color: Color,
     alias: Alias,
@@ -30,7 +31,7 @@ val nodeAnnouncement: Codec[NodeAnnouncement] =
     .withKey(_.nodeId.publicKey)(
       ("signature" | signature) ::
         ("features" | features) ::
-        ("timestamp" | uint32) ::
+        ("timestamp" | timestamp) ::
         ("node_id" | nodeId) ::
         ("rgb_color" | color) ::
         ("alias" | alias) ::
@@ -39,6 +40,8 @@ val nodeAnnouncement: Codec[NodeAnnouncement] =
         )) ::
         ("unknown" | bytes)
     )
+
+val xxx: Codec[NodeAnnouncement] = proto[NodeAnnouncement]
 
 object NodeAnnouncement:
   given Document[NodeAnnouncement] with
@@ -58,20 +61,20 @@ object NodeAnnouncement:
           )
         ).indent(3)
 
-val nodeAnnouncement2: Codec[NodeAnnouncement] =
-  signet[NodeAnnouncement](64)(a => (a.signature, a.nodeId.publicKey))
-  ((
-    ("signature" | signature) ::
-      ("features" | features) ::
-      ("timestamp" | uint32) ::
-      ("node_id" | nodeId) ::
-      ("rgb_color" | color) ::
-      ("alias" | alias) ::
-      ("addresses" | vector(
-        variableSizeBytes("addrlen" | uint16, address)
-      )) ::
-      ("unknown" | bytes)
-  ).as[NodeAnnouncement])
+// val nodeAnnouncement2: Codec[NodeAnnouncement] =
+//   signet[NodeAnnouncement](64)(a => (a.signature, a.nodeId.publicKey))
+//   ((
+//     ("signature" | signature) ::
+//       ("features" | features) ::
+//       ("timestamp" | uint32) ::
+//       ("node_id" | nodeId) ::
+//       ("rgb_color" | color) ::
+//       ("alias" | alias) ::
+//       ("addresses" | vector(
+//         variableSizeBytes("addrlen" | uint16, address)
+//       )) ::
+//       ("unknown" | bytes)
+//   ).as[NodeAnnouncement])
 
 final case class ChannelAnnouncement(
     nodeSignature1: Signature,
@@ -87,20 +90,7 @@ final case class ChannelAnnouncement(
     bitcoinKey2: NodeId
 )
 
-val channelAnnouncement: Codec[ChannelAnnouncement] =
-  (
-    ("node_signature_1" | signature) ::
-      ("node_signature_2" | signature) ::
-      ("bitcoin_signature_1" | signature) ::
-      ("bitcoin_signature_2" | signature) ::
-      ("features" | features) ::
-      ("chain_hash" | chain) ::
-      ("short_channel_id" | shortChannelId) ::
-      ("node_id_1" | nodeId) ::
-      ("node_id_2" | nodeId) ::
-      ("bitcoin_key_1" | nodeId) ::
-      ("bitcoin_key_2" | nodeId)
-  ).as[ChannelAnnouncement]
+val channelAnnouncement: Codec[ChannelAnnouncement] = proto
 
 final case class ChannelUpdate(
     signature: Signature,
@@ -110,10 +100,10 @@ final case class ChannelUpdate(
     messageFlags: Byte,
     channelFlags: Byte,
     cltvExpiryDelta: Int,
-    htlcMinimumMsat: BigInt,
+    htlcMinimumMsat: Msat,
     feeBaseMsat: Long,
     feeProportionalMillionths: Long,
-    htlcMaximumMsat: BigInt
+    htlcMaximumMsat: Msat
 )
 
 val channelUpdate: Codec[ChannelUpdate] =
@@ -125,8 +115,8 @@ val channelUpdate: Codec[ChannelUpdate] =
       ("message_flags" | byte) ::
       ("channel_flags" | byte) ::
       ("cltv_expiry_delta" | uint16) ::
-      ("htlc_minimum_msat" | uint64) ::
+      ("htlc_minimum_msat" | msat) ::
       ("fee_base_msat" | uint32) ::
       ("fee_proportional_millionths" | uint32) ::
-      ("hltc_maximum_msat" | uint64)
+      ("hltc_maximum_msat" | msat)
   ).as[ChannelUpdate]
