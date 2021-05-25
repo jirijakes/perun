@@ -12,8 +12,8 @@ import perun.proto.blockchain.*
 import perun.proto.codecs.*
 import perun.proto.features.*
 import perun.proto.generic.proto
-import perun.proto.signed.*
 import perun.proto.uint64.*
+import perun.proto.validate.*
 
 final case class NodeAnnouncement(
     signature: Signature,
@@ -27,8 +27,8 @@ final case class NodeAnnouncement(
 )
 
 val nodeAnnouncement: Codec[NodeAnnouncement] =
-  signed[NodeAnnouncement]
-    .withKey(_.nodeId.publicKey)(
+  validated[NodeAnnouncement](
+    (
       ("signature" | signature) ::
         ("features" | features) ::
         ("timestamp" | timestamp) ::
@@ -39,9 +39,10 @@ val nodeAnnouncement: Codec[NodeAnnouncement] =
           variableSizeBytes("addrlen" | uint16, address)
         )) ::
         ("unknown" | bytes)
-    )
+    ).as[NodeAnnouncement]
+  )(signed(64, _.signature, _.nodeId.publicKey))
 
-val xxx: Codec[NodeAnnouncement] = proto[NodeAnnouncement]
+// val xxx: Codec[NodeAnnouncement] = proto[NodeAnnouncement]
 
 object NodeAnnouncement:
   given Document[NodeAnnouncement] with
@@ -61,21 +62,6 @@ object NodeAnnouncement:
           )
         ).indent(3)
 
-// val nodeAnnouncement2: Codec[NodeAnnouncement] =
-//   signet[NodeAnnouncement](64)(a => (a.signature, a.nodeId.publicKey))
-//   ((
-//     ("signature" | signature) ::
-//       ("features" | features) ::
-//       ("timestamp" | uint32) ::
-//       ("node_id" | nodeId) ::
-//       ("rgb_color" | color) ::
-//       ("alias" | alias) ::
-//       ("addresses" | vector(
-//         variableSizeBytes("addrlen" | uint16, address)
-//       )) ::
-//       ("unknown" | bytes)
-//   ).as[NodeAnnouncement])
-
 final case class ChannelAnnouncement(
     nodeSignature1: Signature,
     nodeSignature2: Signature,
@@ -90,7 +76,32 @@ final case class ChannelAnnouncement(
     bitcoinKey2: NodeId
 )
 
-val channelAnnouncement: Codec[ChannelAnnouncement] = proto
+val channelAnnouncement: Codec[ChannelAnnouncement] =
+  validated[ChannelAnnouncement](
+    (
+      ("node_signature_1" | signature) ::
+        ("node_signature_2" | signature) ::
+        ("bitcoin_signature_1" | signature) ::
+        ("bitcoin_signature_2" | signature) ::
+        ("features" | features) ::
+        ("chain_hash" | chain) ::
+        ("short_channel_id" | shortChannelId) ::
+        ("node_id_1" | nodeId) ::
+        ("node_id_2" | nodeId) ::
+        ("bitcoin_key_1" | nodeId) ::
+        ("bitcoin_key_2" | nodeId)
+    ).as[ChannelAnnouncement]
+  )(
+    signed(
+      2048,
+      _.nodeSignature1,
+      _.nodeId1.publicKey,
+      _.nodeSignature2,
+      _.nodeId2.publicKey
+    )
+  )
+
+// val channelAnnouncement: Codec[ChannelAnnouncement] = proto
 
 final case class ChannelUpdate(
     signature: Signature,
