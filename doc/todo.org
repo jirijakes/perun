@@ -1,6 +1,6 @@
 #+TITLE: TODO
 
-* Assorted [4/8]
+* Assorted [5/11]
 
   - [X] Make ~uint64~ represented by ~BigInt~, ~bigsize~ will remain ~Long~
   - [ ] Solve verification of signatures in gossip messages
@@ -13,3 +13,6 @@
     - https://scalacenter.github.io/scalafix/docs/users/installation.html
   - [ ] organize packages and rename project
   - [ ] Move to zio-json when 3.0.0
+  - [X] Use Secp256k1 JNA
+  - [ ] Remove Bitcoin-s dependency
+  - [ ] Add Secp256k1 JNA tests

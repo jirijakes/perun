@@ -1,6 +1,6 @@
 package noise
 
-import fr.acinq.secp256k1.Secp256k1
+// import fr.acinq.secp256k1.Secp256k1
 import org.bitcoins.crypto.CryptoUtil.sha256
 import org.bitcoins.crypto.*
 import org.bouncycastle.crypto.digests.SHA256Digest
@@ -10,6 +10,7 @@ import scodec.bits.ByteVector
 import zio.*
 
 import perun.crypto.keygen.*
+import perun.crypto.secp256k1.*
 import perun.crypto.{DecryptionError, chacha}
 
 /*
@@ -112,8 +113,8 @@ object SymmetricState:
     new SymmetricState(ck, ck, CipherState.Empty).mixHash(prologue)
   end apply
 
-def dh(v1: ECPrivateKey, v2: ECPublicKey) =
-  ByteVector.view(Secp256k1.get().ecdh(v1.bytes.toArray, v2.bytes.toArray))
+// def dh(v1: ECPrivateKey, v2: ECPublicKey) =
+//   ByteVector.view(Secp256k1.get().ecdh(v1.bytes.toArray, v2.bytes.toArray))
 
 enum HandshakeResult:
   case Continue(m: ByteVector, st: HandshakeState)
@@ -215,113 +216,119 @@ final class HandshakeState(
 
   def writeMessage(
       payload: ByteVector
-  ): ZIO[Keygen, HandshakeError, HandshakeResult] =
-    patterns.headOption match
-      case None => ???
-      case Some(tokens) =>
-        tokens
-          .foldLeft(aaa) {
-            case (s, E) =>
-              s.zipWith(generateKeypair) { case ((st, buf), e) =>
-                (
-                  st.setE(e).mixHash(e.publicKey),
-                  buf ++ e.publicKey.compressed.bytes
-                )
-              }
-            case (s, ES) =>
-              s.map { (st, buf) =>
-                if st.role == HandshakeRole.Initiator then
+  ): ZIO[Keygen & Has[Secp256k1], HandshakeError, HandshakeResult] =
+    ZIO.environment[Has[Secp256k1]].map(_.get).flatMap { secp =>
+      patterns.headOption match
+        case None => ???
+        case Some(tokens) =>
+          tokens
+            .foldLeft(aaa) {
+              case (s, E) =>
+                s.zipWith(generateKeypair) { case ((st, buf), e) =>
                   (
-                    st.mixKey(dh(st.e.get, st.rs.get)),
+                    st.setE(e).mixHash(e.publicKey),
+                    buf ++ e.publicKey.compressed.bytes
+                  )
+                }
+              case (s, ES) =>
+                s.map { (st, buf) =>
+                  if st.role == HandshakeRole.Initiator then
+                    (
+                      st.mixKey(secp.ecdh(st.e.get, st.rs.get)),
+                      buf
+                    )
+                  else
+                    (
+                      st.mixKey(secp.ecdh(st.s, st.re.get)),
+                      buf
+                    )
+                }
+              case (s, EE) =>
+                s.map { (st, buf) =>
+                  (
+                    st.mixKey(secp.ecdh(st.e.get, st.re.get)),
                     buf
                   )
-                else
-                  (
-                    st.mixKey(dh(st.s, st.re.get)),
-                    buf
-                  )
-              }
-            case (s, EE) =>
-              s.map { (st, buf) =>
-                (
-                  st.mixKey(dh(st.e.get, st.re.get)),
-                  buf
-                )
-              }
-            case (s, S) =>
-              s.map { (st, buf) =>
-                val (ciphertext, nextHs) =
-                  st.encryptAndHash(st.s.publicKey.compressed.bytes)
-                (nextHs, buf ++ ciphertext)
-              }
-            case (s, SE) =>
-              s.map { (st, buf) =>
-                if st.role == HandshakeRole.Initiator then
-                  (
-                    st.mixKey(dh(st.s, st.re.get)),
-                    buf
-                  )
-                else
-                  (
-                    st.mixKey(dh(st.e.get, st.rs.get)),
-                    buf
-                  )
-              }
+                }
+              case (s, S) =>
+                s.map { (st, buf) =>
+                  val (ciphertext, nextHs) =
+                    st.encryptAndHash(st.s.publicKey.compressed.bytes)
+                  (nextHs, buf ++ ciphertext)
+                }
+              case (s, SE) =>
+                s.map { (st, buf) =>
+                  if st.role == HandshakeRole.Initiator then
+                    (
+                      st.mixKey(secp.ecdh(st.s, st.re.get)),
+                      buf
+                    )
+                  else
+                    (
+                      st.mixKey(secp.ecdh(st.e.get, st.rs.get)),
+                      buf
+                    )
+                }
 
-          }
-          .map { (hs, buf) =>
-            val (ciphertext, nextHs) = hs.encryptAndHash(payload)
-            nextHs.nextPattern match
-              case None =>
-                val (c1, c2) = symmetric.split
-                HandshakeResult.Done(c1, c2)
-              case Some(st) =>
-                HandshakeResult.Continue(buf ++ ciphertext, st)
-          }
+            }
+            .map { (hs, buf) =>
+              val (ciphertext, nextHs) = hs.encryptAndHash(payload)
+              nextHs.nextPattern match
+                case None =>
+                  val (c1, c2) = symmetric.split
+                  HandshakeResult.Done(c1, c2)
+                case Some(st) =>
+                  HandshakeResult.Continue(buf ++ ciphertext, st)
+            }
+    }
 
-  def readMessage(message: ByteVector): IO[HandshakeError, HandshakeResult] =
+  def readMessage(
+      message: ByteVector
+  ): ZIO[Has[Secp256k1], HandshakeError, HandshakeResult] =
     val (v, (c, t)) =
       (message.head, message.tail.splitAt(message.tail.length - 16))
     patterns.headOption match
       case None => ???
       case Some(tokens) =>
-        val hs = tokens.foldLeft[Either[DecryptionError, HandshakeState]](
-          Right(this)
-        ) {
-          case (Right(st), E) =>
-            val re = ECPublicKey.fromBytes(c)
-            Right(st.setRe(re).mixHash(re))
-          case (Right(st), EE) =>
-            Right(st.mixKey(dh(st.e.get, st.re.get)))
-          case (Right(st), ES) =>
-            if st.role == HandshakeRole.Initiator then
-              Right(st.mixKey(dh(st.e.get, st.rs.get)))
-            else Right(st.mixKey(dh(st.s, st.re.get)))
-          case (Right(st), S) =>
-            st.decryptAndHash(c)
-              .map((plaintext, nextHs) =>
-                nextHs.setRs(ECPublicKey.fromBytes(plaintext))
-              )
-          case (Right(st), SE) =>
-            if st.role == HandshakeRole.Initiator then
-              Right(st.mixKey(dh(st.s, st.re.get)))
-            else Right(st.mixKey(dh(st.e.get, st.rs.get)))
-          case (left, _) => left
+        ZIO.environment[Has[Secp256k1]].map(_.get).flatMap { secp =>
+          val hs = tokens.foldLeft[Either[DecryptionError, HandshakeState]](
+            Right(this)
+          ) {
+            case (Right(st), E) =>
+              val re = ECPublicKey.fromBytes(c)
+              Right(st.setRe(re).mixHash(re))
+            case (Right(st), EE) =>
+              Right(st.mixKey(secp.ecdh(st.e.get, st.re.get)))
+            case (Right(st), ES) =>
+              if st.role == HandshakeRole.Initiator then
+                Right(st.mixKey(secp.ecdh(st.e.get, st.rs.get)))
+              else Right(st.mixKey(secp.ecdh(st.s, st.re.get)))
+            case (Right(st), S) =>
+              st.decryptAndHash(c)
+                .map((plaintext, nextHs) =>
+                  nextHs.setRs(ECPublicKey.fromBytes(plaintext))
+                )
+            case (Right(st), SE) =>
+              if st.role == HandshakeRole.Initiator then
+                Right(st.mixKey(secp.ecdh(st.s, st.re.get)))
+              else Right(st.mixKey(secp.ecdh(st.e.get, st.rs.get)))
+            case (left, _) => left
 
+          }
+          hs.flatMap(_.decryptAndHash(t)) match
+            case Right((plaintext, nextHs)) =>
+              UIO.succeed {
+                nextHs.nextPattern match
+                  case None =>
+                    val (c1, c2) = nextHs.symmetric.split
+                    HandshakeResult.Done(c1, c2)
+                  case Some(st) =>
+                    HandshakeResult.Continue(plaintext, st.nextExpected)
+              }
+
+            case Left(DecryptionError.BadTag) =>
+              IO.fail(HandshakeError.InvalidCiphertext)
         }
-        hs.flatMap(_.decryptAndHash(t)) match
-          case Right((plaintext, nextHs)) =>
-            UIO.succeed {
-              nextHs.nextPattern match
-                case None =>
-                  val (c1, c2) = nextHs.symmetric.split
-                  HandshakeResult.Done(c1, c2)
-                case Some(st) =>
-                  HandshakeResult.Continue(plaintext, st.nextExpected)
-            }
-
-          case Left(DecryptionError.BadTag) =>
-            IO.fail(HandshakeError.InvalidCiphertext)
 
 object HandshakeState:
   val initsym =

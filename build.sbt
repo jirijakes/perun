@@ -23,9 +23,9 @@ libraryDependencies ++= List(
   //"nl.vroste" %% "rezilience" % "0.6.0+29-1ae49682+20210511-0646-SNAPSHOT",
   // "org.bitcoin-s" % "bitcoin-s-core_2.13" % "0.6.0",
   "org.bitcoin-s" % "bitcoin-s-crypto_2.13" % "0.6.0" excludeAll("org.scodec"),
-  "org.bouncycastle" % "bcprov-jdk15on" % "1.68",
-  "fr.acinq.secp256k1" % "secp256k1-kmp-jvm" % "0.5.1",
-  "fr.acinq.secp256k1" % "secp256k1-kmp-jni-jvm" % "0.5.1",
+  // "org.bouncycastle" % "bcprov-jdk15on" % "1.68",
+  // "fr.acinq.secp256k1" % "secp256k1-kmp-jvm" % "0.5.1",
+  // "fr.acinq.secp256k1" % "secp256k1-kmp-jni-jvm" % "0.5.1",
   "com.softwaremill.quicklens" %% "quicklens" % "1.7.3",
   "org.scodec" %% "scodec-core" % "2.0.0",
   "org.scodec" %% "scodec-bits" % "1.1.27",
@@ -37,6 +37,7 @@ libraryDependencies ++= List(
   "org.typelevel" % "paiges-core_2.13" % "0.4.1",
   "io.circe" % "circe-core_2.13" % "0.12.3",  // 0.13.0 depends on Cats
   "io.circe" % "circe-parser_2.13" % "0.12.3",
+  "net.java.dev.jna" % "jna" % "5.8.0"
 )
 
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")

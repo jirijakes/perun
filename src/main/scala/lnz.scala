@@ -24,6 +24,7 @@ object lnz extends App:
 
   import noise.*
   import perun.crypto.keygen.*
+  import perun.crypto.secp256k1.*
   import util.*
 
   import perun.db.*
@@ -112,7 +113,7 @@ object lnz extends App:
       .provideCustomLayer(
         perun.crypto.keygen.live ++
           Store.live("jdbc:hsqldb:file:testdb") ++
-          tinkerpop.inMemory
+          tinkerpop.inMemory ++ native
       )
       .exitCode
 

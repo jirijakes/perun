@@ -37,17 +37,21 @@ object noise extends DefaultRunnableSpec:
           lnz.Peer(
             cipherState(
               "919219dbb2920afa8db80f9a51787a840bcf111ed8d588caf9ab4be716e42b01",
-              "969ab31b4d288cedf6218839b27a3e2140827047f2c0f01bf5c04435d43511a9",
+              "969ab31b4d288cedf6218839b27a3e2140827047f2c0f01bf5c04435d43511a9"
             ),
             cipherState(
               "919219dbb2920afa8db80f9a51787a840bcf111ed8d588caf9ab4be716e42b01",
-              "bb9020b8965f4df047e07f955f3c4b88418984aadc5cdb35096b9ea8fa5c3442",
+              "bb9020b8965f4df047e07f955f3c4b88418984aadc5cdb35096b9ea8fa5c3442"
             )
           ),
           ByteVector(1, 1, 1)
         )
 
-        assertM(handshake(responder, in, out).provideCustomLayer(keygen))(
+        assertM(
+          handshake(responder, in, out).provideCustomLayer(
+            keygen ++ perun.crypto.secp256k1.native
+          )
+        )(
           equalTo(expected)
         )
       }
