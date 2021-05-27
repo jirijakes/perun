@@ -66,6 +66,8 @@ def start(
         val s2 = errs.mapM {
           case Invalid.Signature(Message.ChannelAnnouncement(c)) =>
             putStrLn("BOOOM").as(Response.Ignore)
+          case Invalid.Signature(Message.NodeAnnouncement(c)) =>
+            putStrLn("BOOOM").as(Response.Ignore)
           case _ => UIO(Response.Ignore)
         }
 
