@@ -1,6 +1,6 @@
 #+TITLE: TODO
 
-* Assorted [5/11]
+* Assorted [5/12]
 
   - [X] Make ~uint64~ represented by ~BigInt~, ~bigsize~ will remain ~Long~
   - [ ] Solve verification of signatures in gossip messages
@@ -16,3 +16,6 @@
   - [X] Use Secp256k1 JNA
   - [ ] Remove Bitcoin-s dependency
   - [ ] Add Secp256k1 JNA tests
+  - [ ] Add proper error types
+    - [ ] peer.decrypt
+    - [ ] peer.encrypt

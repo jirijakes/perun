@@ -7,9 +7,6 @@ object lnz extends App:
 
   val x = org.bitcoins.crypto.ECPublicKey.dummy
 
-  System.loadLibrary("secp256k1")
-  org.scijava.nativelib.NativeLoader.loadLibrary("secp256k1")
-
   val ls1 = org.bitcoins.crypto.ECPrivateKey(
     "1111111111111111111111111111111111111111111111111111111111111111"
   )

@@ -4,7 +4,7 @@ import scala.annotation.tailrec
 
 import noise.*
 import scodec.*
-import scodec.bits.{hex, _}
+import scodec.bits.{hex, *}
 import scodec.codecs.uint16
 import zio.*
 import zio.clock.Clock
@@ -15,9 +15,15 @@ import zio.stream.*
 import perun.db.*
 import perun.proto.blockchain.Chain
 import perun.proto.features.Features
-import perun.proto.gossip.{GossipTimestampFilter, QueryChannelRange, receiveMessage => receiveGTF}
+import perun.proto.gossip.{
+  GossipTimestampFilter,
+  QueryChannelRange,
+  receiveMessage as receiveGTF
+}
 import perun.proto.init.Init
 import perun.proto.{Message, Response}
+import perun.crypto.secp256k1.Secp256k1
+import perun.proto.bolt.validate.*
 
 final case class State(
     gossipFilter: Option[GossipTimestampFilter]
@@ -29,37 +35,54 @@ def start(
     close: ZIO[Any, Nothing, Unit],
     rk: CipherState,
     sk: CipherState
-): ZIO[Store & Clock & Console & P2P, Nothing, Unit] =
+): ZIO[Store & Clock & Console & P2P & Has[Secp256k1], Nothing, Unit] =
   for
     state <- Ref.make(State(None))
     // _ <- execute("CREATE TABLE prd (id INT)").orDie
-    hr <- ZHub.unbounded[perun.proto.Message]
+    hr <- ZHub.unbounded[ByteVector]
     hw <- ZHub.unbounded[perun.proto.Message]
     _ <- ZStream
       .fromHub(hr)
-      .mapM {
-        case Message.Ping(p) => perun.proto.ping.receiveMessage(p)
-        case Message.GossipTimestampFilter(f) =>
-          state.update(receiveGTF(f, _)).as(Response.Ignore)
-        case Message.Init(_)              => UIO(Response.Ignore)
-        case Message.Pong(_)              => UIO(Response.Ignore)
-        case _: Message.ReplyChannelRange => UIO(Response.Ignore)
-        case Message.NodeAnnouncement(n)  => offerNode(n).as(Response.Ignore)
-        case Message.ChannelAnnouncement(c) =>
-          offerChannel(c).as(Response.Ignore)
-      }
-      .foreach {
-        case Response.Ignore  => ZIO.unit
-        case Response.Send(m) => hw.publish(m)
+      .map(b => perun.proto.decode(b).map((b, _)))
+      .collect { case Right(m) => m }
+      .partitionEither(validateSignatures)
+      .use { (errs, msgs) =>
+        val s1 = msgs
+          .mapM {
+            case Message.Ping(p) => perun.proto.ping.receiveMessage(p)
+            case Message.GossipTimestampFilter(f) =>
+              state.update(receiveGTF(f, _)).as(Response.Ignore)
+            case Message.Init(_)              => UIO(Response.Ignore)
+            case Message.Pong(_)              => UIO(Response.Ignore)
+            case Message.ReplyChannelRange(_) => UIO(Response.Ignore)
+            case Message.NodeAnnouncement(n) =>
+              offerNode(n).ignore.as(Response.Ignore)
+            case Message.ChannelAnnouncement(c) =>
+              offerChannel(c).ignore.as(Response.Ignore)
+            case Message.ChannelUpdate(c)     => UIO(Response.Ignore)
+            case Message.QueryChanellRange(q) => UIO(Response.Ignore)
+          }
+
+        val s2 = errs.mapM {
+          case Invalid.Signature(Message.ChannelAnnouncement(c)) =>
+            putStrLn("BOOOM").as(Response.Ignore)
+          case _ => UIO(Response.Ignore)
+        }
+
+        s1.merge(s2).foreach {
+          case Response.Ignore  => ZIO.unit
+          case Response.Send(m) => hw.publish(m).unit
+        }
       }
       .fork
     f1 <- in
       .transduce(decrypt(rk))
-      .map(perun.proto.decode)
-      .foreach {
-        case Right(m) => putStrLn(s"Received: $m") *> hr.publish(m)
-        case Left(e)  => ZIO.unit // putStrLn("Error: " + e)
-      }
+      .foreach(b => hr.publish(b))
+      // .map(b => (perun.proto.decode(b), b))
+      // .foreach {
+      // case (Right(m), b) => putStrLn(s"Received: $m") *> hr.publish(m)
+      // case (Left(e), _)  => ZIO.unit // putStrLn("Error: " + e)
+      // }
       .fork
     f3 <- ZStream
       .fromHub(hw)

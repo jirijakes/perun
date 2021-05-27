@@ -16,28 +16,22 @@ enum Message:
   case GossipTimestampFilter(m: gossip.GossipTimestampFilter)
   case NodeAnnouncement(m: gossip.NodeAnnouncement)
   case ChannelAnnouncement(m: gossip.ChannelAnnouncement)
+  case ChannelUpdate(m: gossip.ChannelUpdate)
 
-val messageCodec: Codec[Message] =
-  discriminated[Message]
-    .by(uint16)
-    .caseP(16) { case Message.Init(m) => m }(Message.Init.apply)(init.init)
-    .caseP(18) { case Message.Ping(m) => m }(Message.Ping.apply)(ping.ping)
-    .caseP(19) { case Message.Pong(m) => m }(Message.Pong.apply)(ping.pong)
-    .caseP(256) { case Message.ChannelAnnouncement(m) => m }(
-      Message.ChannelAnnouncement.apply
-    )(gossip.channelAnnouncement)
-    .caseP(257) { case Message.NodeAnnouncement(m) => m }(
-      Message.NodeAnnouncement.apply
-    )(gossip.nodeAnnouncement)
-    .caseP(263) { case Message.QueryChanellRange(m) => m }(
-      Message.QueryChanellRange.apply
-    )(gossip.queryChannelRange)
-    .caseP(264) { case Message.ReplyChannelRange(m) => m }(
-      Message.ReplyChannelRange.apply
-    )(gossip.replyChannelRange)
-    .caseP(265) { case Message.GossipTimestampFilter(m) => m }(
-      Message.GossipTimestampFilter.apply
-    )(gossip.gossipTimestampFilter)
+import Message.*
+
+// format: off
+val messageCodec: Codec[Message] = discriminated[Message].by(uint16)
+  .caseP(16)  { case Init(m)                  => m }(Init.apply                 )(init.init                   )
+  .caseP(18)  { case Ping(m)                  => m }(Ping.apply                 )(ping.ping                   )
+  .caseP(19)  { case Pong(m)                  => m }(Pong.apply                 )(ping.pong                   )
+  .caseP(256) { case ChannelAnnouncement(m)   => m }(ChannelAnnouncement.apply  )(gossip.channelAnnouncement  )
+  .caseP(257) { case NodeAnnouncement(m)      => m }(NodeAnnouncement.apply     )(gossip.nodeAnnouncement     )
+  .caseP(258) { case ChannelUpdate(m)         => m }(ChannelUpdate.apply        )(gossip.channelUpdate        )
+  .caseP(263) { case QueryChanellRange(m)     => m }(QueryChanellRange.apply    )(gossip.queryChannelRange    )
+  .caseP(264) { case ReplyChannelRange(m)     => m }(ReplyChannelRange.apply    )(gossip.replyChannelRange    )
+  .caseP(265) { case GossipTimestampFilter(m) => m }(GossipTimestampFilter.apply)(gossip.gossipTimestampFilter)
+// format: on
 
 enum Response:
   case Send(m: Message)

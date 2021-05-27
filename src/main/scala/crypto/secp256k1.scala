@@ -18,16 +18,18 @@ enum Error:
   case CouldNotInitialize
 
 trait Secp256k1:
-  def verifySecureKey(key: Array[Byte]): Int
   def ecdh(sec: ECPrivateKey, pub: ECPublicKey): ByteVector
-  def verify(
+  def verifySignature(
       s: ECDigitalSignature,
       h: DoubleSha256Digest,
       k: ECPublicKey
   ): Boolean
 
-def verifySecureKey(key: Array[Byte]): URIO[Has[Secp256k1], Int] =
-  ZIO.access(_.get.verifySecureKey(key))
+def verifySignature(
+    s: ECDigitalSignature,
+    h: DoubleSha256Digest,
+    k: ECPublicKey
+): URIO[Has[Secp256k1], Boolean] = ZIO.access(_.get.verifySignature(s, h, k))
 
 def native: ZLayer[Any, Error, Has[Secp256k1]] =
   ZManaged
@@ -52,8 +54,6 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
     .map { (ctx, lib, cb) =>
       new Secp256k1:
         val x = cb
-        def verifySecureKey(key: Array[Byte]): Int =
-          lib.secp256k1_ec_seckey_verify(ctx, key)
         def ecdh(sec: ECPrivateKey, pub: ECPublicKey): ByteVector =
           val key = unsafe.Pubkey.empty
           val keyr = lib.secp256k1_ec_pubkey_parse(
@@ -72,8 +72,11 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
             Pointer.NULL
           )
           ByteVector.view(out)
-        def verify(s: ECDigitalSignature, h: DoubleSha256Digest, k: ECPublicKey)
-            : Boolean =
+        def verifySignature(
+            s: ECDigitalSignature,
+            h: DoubleSha256Digest,
+            k: ECPublicKey
+        ): Boolean =
           val sig = unsafe.Signature.empty
           val sigr = lib.secp256k1_ecdsa_signature_parse_compact(
             ctx,
@@ -134,7 +137,6 @@ object unsafe:
         in: Array[Byte],
         size: Int
     ): Int
-    def secp256k1_ec_seckey_verify(c: Context, a: Array[Byte]): Int
     def secp256k1_ecdh(
         c: Context,
         out: Array[Byte],

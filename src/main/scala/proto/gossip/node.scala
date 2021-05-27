@@ -73,7 +73,8 @@ final case class ChannelAnnouncement(
     nodeId1: NodeId,
     nodeId2: NodeId,
     bitcoinKey1: NodeId,
-    bitcoinKey2: NodeId
+    bitcoinKey2: NodeId,
+    unknown: ByteVector
 )
 
 val channelAnnouncement: Codec[ChannelAnnouncement] =
@@ -89,7 +90,8 @@ val channelAnnouncement: Codec[ChannelAnnouncement] =
         ("node_id_1" | nodeId) ::
         ("node_id_2" | nodeId) ::
         ("bitcoin_key_1" | nodeId) ::
-        ("bitcoin_key_2" | nodeId)
+        ("bitcoin_key_2" | nodeId) ::
+        ("unknown_bytes" | bytes)
     ).as[ChannelAnnouncement]
   )(
     signed(
