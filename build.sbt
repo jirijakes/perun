@@ -22,6 +22,7 @@ libraryDependencies ++= List(
   // "dev.zio" % "zio-json" % "0.1.4",
   //"nl.vroste" %% "rezilience" % "0.6.0+29-1ae49682+20210511-0646-SNAPSHOT",
   // "org.bitcoin-s" % "bitcoin-s-core_2.13" % "0.6.0",
+  "org.bitcoin-s" % "bitcoin-s-core_2.13" % "0.6.0" excludeAll("org.scodec"),
   "org.bitcoin-s" % "bitcoin-s-crypto_2.13" % "0.6.0" excludeAll("org.scodec"),
   // "org.bouncycastle" % "bcprov-jdk15on" % "1.68",
   // "fr.acinq.secp256k1" % "secp256k1-kmp-jvm" % "0.5.1",
