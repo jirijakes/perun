@@ -97,6 +97,7 @@ object lnz extends App:
           .flatMap { (peer, leftover) =>
             perun.peer
               .start(
+                perun.peer.Configuration(perun.proto.blockchain.Chain.Testnet),
                 Stream.fromIterable(leftover.toArray) ++ c.read,
                 c.write,
                 c.close(),

@@ -36,6 +36,7 @@ val messageCodec: Codec[Message] = discriminated[Message].by(uint16)
 enum Response:
   case Send(m: Message)
   case Ignore
+  case FailConnection
 
 def decode(b: ByteVector): Either[String, Message] =
   messageCodec.decodeValue(b.toBitVector).toEither.left.map(_.toString)

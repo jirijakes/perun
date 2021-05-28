@@ -29,7 +29,12 @@ final case class State(
     gossipFilter: Option[GossipTimestampFilter]
 )
 
+final case class Configuration(
+    chain: Chain
+)
+
 def start(
+    conf: Configuration,
     in: Stream[Throwable, Byte],
     out: Sink[Throwable, Byte, Nothing, Int],
     close: ZIO[Any, Nothing, Unit],
@@ -38,20 +43,28 @@ def start(
 ): ZIO[Store & Clock & Console & P2P & Has[Secp256k1], Nothing, Unit] =
   for
     state <- Ref.make(State(None))
+    gossipFilter = state.foldAll(
+      identity,
+      identity,
+      identity,
+      (f: GossipTimestampFilter) => s => Right(s.copy(gossipFilter = Some(f))),
+      s => Right(s.gossipFilter)
+    )
     // _ <- execute("CREATE TABLE prd (id INT)").orDie
     hr <- ZHub.unbounded[ByteVector]
-    hw <- ZHub.unbounded[perun.proto.Message]
+    hw <- ZHub.unbounded[Message]
     _ <- ZStream
       .fromHub(hr)
       .map(b => perun.proto.decode(b).map((b, _)))
       .collect { case Right(m) => m }
-      .partitionEither(validateSignatures)
+      .partitionEither(validate(conf))
       .use { (errs, msgs) =>
         val s1 = msgs
           .mapM {
             case Message.Ping(p) => perun.proto.ping.receiveMessage(p)
             case Message.GossipTimestampFilter(f) =>
-              state.update(receiveGTF(f, _)).as(Response.Ignore)
+              gossipFilter.set(f).as(Response.Ignore)
+            // state.update(receiveGTF(f, _)).as(Response.Ignore)
             case Message.Init(_)              => UIO(Response.Ignore)
             case Message.Pong(_)              => UIO(Response.Ignore)
             case Message.ReplyChannelRange(_) => UIO(Response.Ignore)
@@ -63,13 +76,17 @@ def start(
             case Message.QueryChanellRange(q) => UIO(Response.Ignore)
           }
 
-        val s2 = errs.mapM {
-          case Invalid.Signature(Message.ChannelAnnouncement(c)) =>
-            putStrLn("BOOOM").as(Response.Ignore)
-          case Invalid.Signature(Message.NodeAnnouncement(c)) =>
-            putStrLn("BOOOM").as(Response.Ignore)
-          case _ => UIO(Response.Ignore)
-        }
+        val s2 = errs
+          .mapM {
+            case Invalid.Signature(Message.ChannelAnnouncement(c)) =>
+              putStrLn("BOOOM").as(Response.Ignore)
+            case Invalid.Signature(Message.NodeAnnouncement(c)) =>
+              putStrLn("BOOOM").as(Response.Ignore)
+            // <<Ignore unknown chain messages>>
+            case Invalid.UnknownChain =>
+              putStrLn("BOOOM").as(Response.Ignore)
+            case _                    => UIO(Response.Ignore)
+          }
 
         s1.merge(s2).foreach {
           case Response.Ignore  => ZIO.unit

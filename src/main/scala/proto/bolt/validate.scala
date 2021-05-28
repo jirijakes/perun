@@ -11,6 +11,7 @@ import perun.proto.codecs.*
 
 enum Invalid:
   case Signature(m: Message)
+  case UnknownChain
 
 def valid(
     b: ByteVector,
@@ -48,3 +49,27 @@ def validateSignatures(
     case m: Message.ChannelAnnouncement => valid(b, m)
     case m: Message.NodeAnnouncement    => valid(b, m)
     case _                              => UIO(Right(m))
+
+def validateChain(
+    conf: perun.peer.Configuration,
+    m: Message
+): Either[Invalid, Message] =
+  m match
+    // <<Channel announcement chain hash>>
+    case Message.ChannelAnnouncement(c) if c.chain == conf.chain =>
+      Left(Invalid.UnknownChain)
+    case _ => Right(m)
+
+/** Perform required steps to validate incoming message. These are described
+  * in relevant BOLTs.
+  *
+  * @param conf configuration of connection
+  * @param b complete decrypted binary message
+  * @param m message decoded from b
+  * @return `Left` with error description if message invalid; otherwise `Right` with original message
+  */
+def validate(conf: perun.peer.Configuration)(
+    b: ByteVector,
+    m: Message
+): URIO[Has[Secp256k1], Either[Invalid, Message]] =
+  validateSignatures(b, m) *> UIO(validateChain(conf, m))

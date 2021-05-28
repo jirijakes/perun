@@ -1,0 +1,5 @@
+#+TITLE: Development
+
+* Implementing BOLTs
+
+  - Every checked box in [[file:bolts/][bolts/]] must have references to code which takes care of it
