@@ -1,6 +1,6 @@
 #+TITLE: TODO
 
-* Assorted [5/12]
+* Assorted [5/15]
 
   - [X] Make ~uint64~ represented by ~BigInt~, ~bigsize~ will remain ~Long~
   - [ ] Solve verification of signatures in gossip messages
@@ -14,8 +14,13 @@
   - [ ] organize packages and rename project
   - [ ] Move to zio-json when 3.0.0
   - [X] Use Secp256k1 JNA
-  - [ ] Remove Bitcoin-s dependency
+  - [ ] Remove Bitcoin-s dependency, if possible
   - [ ] Add Secp256k1 JNA tests
   - [ ] Add proper error types
     - [ ] peer.decrypt
     - [ ] peer.encrypt
+  - [ ] Add JSON-RPC
+  - [ ] Add ZMQ
+    - https://github.com/bitcoin/bitcoin/blob/master/doc/zmq.md
+    - https://github.com/zeromq/jeromq + https://github.com/zeromq/jeromq/blob/master/src/test/java/guide/clonecli1.java
+  - [ ] Move HTTP client from STTP to zio-web when available

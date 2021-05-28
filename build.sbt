@@ -38,7 +38,9 @@ libraryDependencies ++= List(
   "org.typelevel" % "paiges-core_2.13" % "0.4.1",
   "io.circe" % "circe-core_2.13" % "0.12.3",  // 0.13.0 depends on Cats
   "io.circe" % "circe-parser_2.13" % "0.12.3",
-  "net.java.dev.jna" % "jna" % "5.8.0"
+  "net.java.dev.jna" % "jna" % "5.8.0",
+  "com.softwaremill.sttp.client3" %% "httpclient-backend-zio" % "3.3.5",
+  "com.softwaremill.sttp.client3" %% "circe" % "3.3.5"
 )
 
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
