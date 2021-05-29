@@ -2,7 +2,7 @@ import zio.*
 import zio.console.*
 import zio.stream.*
 
-import perun.net.rpc.*
+import org.zeromq.*
 
 object pokus extends App:
 
@@ -20,15 +20,30 @@ object pokus extends App:
   //   )
   //   println(">>> " + CryptoUtil.sha256(z.asmBytes))
 
-  def run(args: List[String]) =
-    txout(1977090, 0, 0)
-      .flatMap(i => putStrLn(i.toString))
-      .provideCustomLayer(
-        HttpClientZioBackend.layer() >>>
-          bitcoind(
-            uri"http://10.0.0.21:18332",
-            "__cookie__",
-            "54f3ffeaf73bb76341e40bfff09749b7e8a408e612011222f136ca15435898aa"
-          )
+  def zmq: Layer[Throwable, Has[ZMQ.Socket]] =
+    ZManaged
+      .fromAutoCloseable(UIO(new ZContext()))
+      .mapM(ctx => Task(ctx.createSocket(SocketType.SUB)))
+      .tapM(s => Task(s.connect("tcp://localhost:28332")))
+      .tapM(s => Task(s.subscribe("hash")))
+      .toLayer
+
+  val program: ZIO[Has[ZMQ.Socket] with Console, Throwable, Unit] =
+    ZIO
+      .environment[Has[ZMQ.Socket]]
+      .map(_.get)
+      .flatMap(s =>
+        for
+          t <- Task(s.recvStr(ZMQ.DONTWAIT))
+          _ <- if t == null then ZIO.unit else putStrLn(t)
+          h <- Task(s.recv(ZMQ.DONTWAIT))
+          _ <-
+            if h == null then ZIO.unit
+            else putStrLn(scodec.bits.ByteVector.view(h).toString)
+          x <- Task(s.recvStr(ZMQ.DONTWAIT))
+          _ <- if x == null then ZIO.unit else putStrLn(x)
+        yield ()
       )
-      .exitCode
+      .forever
+
+  def run(args: List[String]) = program.provideCustomLayer(zmq).exitCode
