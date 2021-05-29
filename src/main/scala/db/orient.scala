@@ -1,5 +1,6 @@
 package perun.db2.orient
 
+/*
 import com.orientechnologies.orient.core.metadata.schema.OType
 import com.orientechnologies.orient.core.sql.OCommandSQL
 import com.tinkerpop.blueprints.impls.orient.*
@@ -32,3 +33,4 @@ def initTypes(db: OrientGraph): Task[Unit] =
       val _ = n.createProperty("publicKey", OType.BINARY)
     }
   else Task.unit
+ */

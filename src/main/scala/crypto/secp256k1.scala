@@ -2,7 +2,6 @@ package perun.crypto.secp256k1
 
 import com.sun.jna.*
 import zio.*
-import jnr.ffi.byref.PointerByReference
 import scodec.bits.ByteVector
 import scala.annotation.targetName
 

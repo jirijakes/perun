@@ -62,6 +62,9 @@ def start(
       .fromHub(hr)
       .map(b => perun.proto.decode(b).map((b, _)))
       .collect { case Right(m) => m }
+      .mapMParUnordered(10) {
+        case x => UIO(x)
+      }
       .partitionEither(validate(conf))
       .use { (errs, msgs) =>
         val s1 = msgs

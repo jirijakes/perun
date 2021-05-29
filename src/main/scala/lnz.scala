@@ -112,12 +112,16 @@ object lnz extends App:
       .provideCustomLayer(
         perun.crypto.keygen.live ++
           Store.live("jdbc:hsqldb:file:testdb") ++
-          tinkerpop.inMemory ++ native ++ (HttpClientZioBackend
-            .layer() >>> bitcoind(
+          tinkerpop.inMemory ++
+          bitcoind(
             uri"http://10.0.0.21:18332",
             "__cookie__",
-            "54f3ffeaf73bb76341e40bfff09749b7e8a408e612011222f136ca15435898aa"
-          ))
+            "4d34b17da1a21fd7015201b42e9ad763a58be4b2a8baa312fd78ced6411691d2"
+          ) ++
+          native
+        // (
+        // HttpClientZioBackend.layer() >>>
+        // )
       )
       .exitCode
 

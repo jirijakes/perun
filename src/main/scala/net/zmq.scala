@@ -1,4 +1,4 @@
-package proto.net.zmq
+package perun.net.zmq
 
 import org.zeromq.*
 import scodec.bits.ByteVector
@@ -22,7 +22,7 @@ def live(connect: String): ZLayer[Blocking, Throwable, Has[Zmq]] =
     .mapM(ctx => Task(ctx.createSocket(SocketType.SUB)))
     .tapM(s => Task(s.connect(connect)))
     .tapM(s => Task(s.subscribe(ZMQ.SUBSCRIPTION_ALL)))
-    .tapM(s => Task(s.setReceiveTimeOut(20)))
+    .tapM(s => Task(s.setReceiveTimeOut(100)))
     .zip(ZManaged.environment[Blocking])
     .map { (soc, blk) =>
 

@@ -2,7 +2,7 @@ import zio.*
 import zio.console.*
 import zio.stream.*
 
-import proto.net.zmq.*
+import perun.net.zmq.*
 
 object pokus extends App:
 
