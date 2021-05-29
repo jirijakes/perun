@@ -1,6 +1,6 @@
 name := "lnz"
 
-scalaVersion := "3.0.1-RC1-bin-20210527-d099811-NIGHTLY" // "3.0.0"
+scalaVersion := "3.0.0"
 
 resolvers += Resolver.publishMavenLocal
 

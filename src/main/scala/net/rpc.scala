@@ -1,7 +1,5 @@
 package perun.net.rpc
 
-import scala.language.experimental.namedTypeArguments
-
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.syntax.*
 import sttp.client3.*
@@ -32,29 +30,34 @@ def bitcoind(
     password: String
 ): ZLayer[SttpClient, Nothing, Has[Rpc]] =
   ZLayer.fromService { cl =>
-    def call[Res: Decoder, P <: Tuple : Encoder](method: String)(params: P = EmptyTuple): Task[Res] =
-      quickRequest
-        .post(endpoint)
-        .auth
-        .basic(user, password)
-        .body(
-          Json.obj(
-            "jsonrpc" := "2.0",
-            "method" := method,
-            "params" := params
+    class RpcPartialApply[Res]:
+      def apply[P <: Tuple: Encoder](
+          method: String
+      )(params: P = EmptyTuple)(using Decoder[Res]): Task[Res] =
+        quickRequest
+          .post(endpoint)
+          .auth
+          .basic(user, password)
+          .body(
+            Json.obj(
+              "jsonrpc" := "2.0",
+              "method" := method,
+              "params" := params
+            )
           )
-        )
-        .response(asJson[Response[Res]])
-        .send(cl)
-        .map(_.body)
-        .absolve
-        .map(_.result)
+          .response(asJson[Response[Res]])
+          .send(cl)
+          .map(_.body)
+          .absolve
+          .map(_.result)
+
+    def rpc[Res] = new RpcPartialApply[Res]
 
     new Rpc:
       def txout(block: Int, tx: Int, out: Int): Task[Vout] =
         for
-          h <- call[Res = String]("getblockhash")(Tuple1(block))
-          b <- call[Res = Block]("getblock")(h, 2)
+          h <- rpc[String]("getblockhash")(Tuple1(block))
+          b <- rpc[Block]("getblock")(h, 2)
         yield b.tx(tx).vout(out)
 
   }
