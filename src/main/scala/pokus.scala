@@ -2,11 +2,7 @@ import zio.*
 import zio.console.*
 import zio.stream.*
 
-import perun.net.jsonrpc.service.*
-import sttp.client3.*
-import sttp.client3.httpclient.zio.*
-import sttp.model.*
-import sttp.client3.SttpBackend
+import perun.net.rpc.*
 
 object pokus extends App:
 
@@ -25,11 +21,14 @@ object pokus extends App:
   //   println(">>> " + CryptoUtil.sha256(z.asmBytes))
 
   def run(args: List[String]) =
-    blockchainInfo
+    txout(1977090, 0, 0)
       .flatMap(i => putStrLn(i.toString))
       .provideCustomLayer(
-        HttpClientZioBackend.layer() >>> live(
-          uri"http://@10.0.0.21:18332"
-        )
+        HttpClientZioBackend.layer() >>>
+          bitcoind(
+            uri"http://10.0.0.21:18332",
+            "__cookie__",
+            "54f3ffeaf73bb76341e40bfff09749b7e8a408e612011222f136ca15435898aa"
+          )
       )
       .exitCode

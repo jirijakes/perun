@@ -25,6 +25,7 @@ object lnz extends App:
   import util.*
 
   import perun.db.*
+  import perun.net.rpc.*
 
   val initiator = HandshakeState.initiator(rs, ls1)
   val responder = HandshakeState.responder(ls1)
@@ -111,7 +112,12 @@ object lnz extends App:
       .provideCustomLayer(
         perun.crypto.keygen.live ++
           Store.live("jdbc:hsqldb:file:testdb") ++
-          tinkerpop.inMemory ++ native
+          tinkerpop.inMemory ++ native ++ (HttpClientZioBackend
+            .layer() >>> bitcoind(
+            uri"http://10.0.0.21:18332",
+            "__cookie__",
+            "54f3ffeaf73bb76341e40bfff09749b7e8a408e612011222f136ca15435898aa"
+          ))
       )
       .exitCode
 

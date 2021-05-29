@@ -13,6 +13,7 @@ import zio.duration.*
 import zio.stream.*
 
 import perun.db.*
+import perun.net.rpc.*
 import perun.proto.blockchain.Chain
 import perun.proto.features.Features
 import perun.proto.gossip.{
@@ -40,7 +41,11 @@ def start(
     close: ZIO[Any, Nothing, Unit],
     rk: CipherState,
     sk: CipherState
-): ZIO[Store & Clock & Console & P2P & Has[Secp256k1], Nothing, Unit] =
+): ZIO[
+  Store & Clock & Console & P2P & Has[Secp256k1] & Has[Rpc],
+  Nothing,
+  Unit
+] =
   for
     state <- Ref.make(State(None))
     gossipFilter = state.foldAll(
@@ -85,7 +90,7 @@ def start(
             // <<Ignore unknown chain messages>>
             case Invalid.UnknownChain =>
               putStrLn("BOOOM").as(Response.Ignore)
-            case _                    => UIO(Response.Ignore)
+            case _ => UIO(Response.Ignore)
           }
 
         s1.merge(s2).foreach {

@@ -1,6 +1,6 @@
 name := "lnz"
 
-scalaVersion := "3.0.0"
+scalaVersion := "3.0.1-RC1-bin-20210527-d099811-NIGHTLY" // "3.0.0"
 
 resolvers += Resolver.publishMavenLocal
 
@@ -36,8 +36,8 @@ libraryDependencies ++= List(
   "org.apache.tinkerpop" % "gremlin-core" % "3.5.0",
   "org.apache.tinkerpop" % "tinkergraph-gremlin" % "3.5.0",
   "org.typelevel" % "paiges-core_2.13" % "0.4.1",
-  "io.circe" % "circe-core_2.13" % "0.12.3",  // 0.13.0 depends on Cats
-  "io.circe" % "circe-parser_2.13" % "0.12.3",
+  "io.circe" %% "circe-core" % "0.14.1",
+  "io.circe" %% "circe-parser" % "0.14.1",
   "net.java.dev.jna" % "jna" % "5.8.0",
   "com.softwaremill.sttp.client3" %% "httpclient-backend-zio" % "3.3.5",
   "com.softwaremill.sttp.client3" %% "circe" % "3.3.5"
