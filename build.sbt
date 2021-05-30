@@ -39,6 +39,7 @@ libraryDependencies ++= List(
   "io.circe" %% "circe-core" % "0.14.1",
   "io.circe" %% "circe-parser" % "0.14.1",
   "net.java.dev.jna" % "jna" % "5.8.0",
+  // "io.d11" %% "zhttp" % "1.0.0.0-RC16+18-bfbb9858+20210530-1124-SNAPSHOT",
   "com.softwaremill.sttp.client3" %% "httpclient-backend-zio" % "3.3.5",
   "com.softwaremill.sttp.client3" %% "circe" % "3.3.5",
   "org.zeromq" % "jeromq" % "0.5.2"
@@ -54,3 +55,5 @@ Global / cancelable := false
 semanticdbEnabled := true
 
 scalacOptions ++= List("-explain", "-new-syntax", "-Xlint:unused", "-Wunused:imports")
+
+scalaModuleInfo ~= (_.map(_.withOverrideScalaVersion(true)))

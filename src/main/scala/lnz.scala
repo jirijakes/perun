@@ -2,6 +2,7 @@ import scodec.bits.*
 import zio.*
 import zio.console.*
 import zio.stream.*
+import sttp.client3.httpclient.zio.HttpClientZioBackend
 
 object lnz extends App:
 
@@ -90,6 +91,28 @@ object lnz extends App:
       // .tap(xxx => ZIO.effectTotal(println("###> " + xxx)))
       .collect("BOOOM") { case (Left(m), Some(n)) => (m, n) }
 
+  lazy val dep: ZLayer[
+    zio.blocking.Blocking,
+    Nothing,
+    Has[Secp256k1] &
+      Has[Rpc] &
+      // Has[perun.db.p2p.P2] &
+      Has[Keygen] &
+      Has[perun.db.store.Store]
+  ] =
+    perun.crypto.keygen.liveKeygen ++
+      store.live("jdbc:hsqldb:file:testdb").orDie ++
+      // tinkerpop.inMemory ++
+      (
+        HttpClientZioBackend.layer().orDie >>>
+          bitcoind(
+            uri"http://10.0.0.21:18332",
+            "__cookie__",
+            "4d34b17da1a21fd7015201b42e9ad763a58be4b2a8baa312fd78ced6411691d2"
+          ).orDie
+      ) ++
+      native.mapError(e => new Exception(e.toString)).orDie
+
   def run(args: List[String]): URIO[ZEnv, ExitCode] =
     ZStream
       .fromSocketServer(9977, None)
@@ -109,20 +132,7 @@ object lnz extends App:
           }
       }
       .onInterrupt(ZIO.effectTotal(println("DOOONE")))
-      .provideCustomLayer(
-        perun.crypto.keygen.live ++
-          Store.live("jdbc:hsqldb:file:testdb") ++
-          tinkerpop.inMemory ++
-          bitcoind(
-            uri"http://10.0.0.21:18332",
-            "__cookie__",
-            "4d34b17da1a21fd7015201b42e9ad763a58be4b2a8baa312fd78ced6411691d2"
-          ) ++
-          native
-        // (
-        // HttpClientZioBackend.layer() >>>
-        // )
-      )
+      .provideCustomLayer(dep)
       .exitCode
 
 end lnz

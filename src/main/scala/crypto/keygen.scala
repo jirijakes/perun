@@ -4,9 +4,7 @@ import org.bitcoins.crypto.ECPrivateKey
 import zio.*
 import zio.prelude.NonEmptyList
 
-type Keygen = Has[Service]
-
-trait Service:
+trait Keygen:
   def generateKeypair: UIO[ECPrivateKey]
 
 /** Creates Keygen which generates truly random keys.
@@ -24,9 +22,9 @@ trait Service:
   *     .exitCode
   * ```
   */
-val live: ULayer[Keygen] =
+val liveKeygen: ULayer[Has[Keygen]] =
   ZLayer.succeed(
-    new Service:
+    new Keygen:
       def generateKeypair: UIO[ECPrivateKey] =
         UIO.effectTotal(ECPrivateKey.freshPrivateKey)
   )
@@ -49,12 +47,12 @@ val live: ULayer[Keygen] =
   *     .exitCode
   * ```
   */
-def repeat(key0: String, other: String*): ULayer[Keygen] =
+def repeat(key0: String, other: String*): ULayer[Has[Keygen]] =
   val nel = NonEmptyList.fromIterable(key0, other)
   Ref
     .make(nel)
     .map { ref =>
-      new Service:
+      new Keygen:
         def generateKeypair: UIO[ECPrivateKey] =
           ref.modify {
             case NonEmptyList.Single(h)  => (ECPrivateKey.fromHex(h), nel)
@@ -64,5 +62,5 @@ def repeat(key0: String, other: String*): ULayer[Keygen] =
     }
     .toLayer
 
-def generateKeypair: URIO[Keygen, ECPrivateKey] =
+def generateKeypair: URIO[Has[Keygen], ECPrivateKey] =
   ZIO.accessM(x => x.get.generateKeypair)

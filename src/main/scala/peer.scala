@@ -12,7 +12,8 @@ import zio.console.*
 import zio.duration.*
 import zio.stream.*
 
-import perun.db.*
+import perun.db.p2p.*
+import perun.db.store.*
 import perun.net.rpc.*
 import perun.proto.blockchain.Chain
 import perun.proto.features.Features
@@ -42,7 +43,12 @@ def start(
     rk: CipherState,
     sk: CipherState
 ): ZIO[
-  Store & Clock & Console & P2P & Has[Secp256k1] & Has[Rpc],
+  Has[Store] &
+    Clock &
+    Console &
+    // Has[P2P] &
+    Has[Secp256k1] &
+    Has[Rpc],
   Nothing,
   Unit
 ] =
@@ -76,10 +82,10 @@ def start(
             case Message.Init(_)              => UIO(Response.Ignore)
             case Message.Pong(_)              => UIO(Response.Ignore)
             case Message.ReplyChannelRange(_) => UIO(Response.Ignore)
-            case Message.NodeAnnouncement(n) =>
-              offerNode(n).ignore.as(Response.Ignore)
-            case Message.ChannelAnnouncement(c) =>
-              offerChannel(c).ignore.as(Response.Ignore)
+            case Message.NodeAnnouncement(n) => UIO(Response.Ignore)
+              // offerNode(n).ignore.as(Response.Ignore)
+            case Message.ChannelAnnouncement(c) => UIO(Response.Ignore)
+              // offerChannel(c).ignore.as(Response.Ignore)
             case Message.ChannelUpdate(c)     => UIO(Response.Ignore)
             case Message.QueryChanellRange(q) => UIO(Response.Ignore)
           }

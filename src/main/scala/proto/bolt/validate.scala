@@ -74,7 +74,7 @@ def validateChain(
 ): Either[Invalid, Message] =
   m match
     // <<Channel announcement chain hash>>
-    case Message.ChannelAnnouncement(c) if c.chain == conf.chain =>
+    case Message.ChannelAnnouncement(c) if c.chain != conf.chain =>
       Left(Invalid.UnknownChain)
     case _ => Right(m)
 

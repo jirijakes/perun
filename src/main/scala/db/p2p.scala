@@ -1,19 +1,16 @@
-package perun.db
+package perun.db.p2p
 
 import zio.*
 
 import perun.proto.gossip.{ChannelAnnouncement, NodeAnnouncement}
 
-type P2P = Has[P2P.Service]
-
-object P2P:
-  trait Service:
-    def offerNode(n: NodeAnnouncement): IO[Throwable, Unit]
-    def offerChannel(c: ChannelAnnouncement): IO[Throwable, Unit]
+trait P2P:
+  def offerNode(n: NodeAnnouncement): IO[Throwable, Unit]
+  def offerChannel(c: ChannelAnnouncement): IO[Throwable, Unit]
 // def offerChannelUpdate
 
-def offerNode(n: NodeAnnouncement): ZIO[P2P, Throwable, Unit] =
+def offerNode(n: NodeAnnouncement): ZIO[Has[P2P], Throwable, Unit] =
   ZIO.accessM(_.get.offerNode(n))
 
-def offerChannel(c: ChannelAnnouncement): ZIO[P2P, Throwable, Unit] =
+def offerChannel(c: ChannelAnnouncement): ZIO[Has[P2P], Throwable, Unit] =
   ZIO.accessM(_.get.offerChannel(c))

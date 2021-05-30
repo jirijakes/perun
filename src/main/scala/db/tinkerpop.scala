@@ -18,11 +18,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.*
 import zio.*
 
-import perun.db.P2P
+import perun.db.p2p.P2P
 import perun.proto.codecs.*
 import perun.proto.gossip.{ChannelAnnouncement, NodeAnnouncement}
 
-def gremlin: ZLayer[Has[GraphTraversalSource], Nothing, P2P] =
+def gremlin: ZLayer[Has[GraphTraversalSource], Nothing, Has[P2P]] =
   ZLayer.fromService(g => new GremlinP2P(g))
 
 /** Layer for creating an in-memory Tinkergraph database suitable for Gremlin.
@@ -40,7 +40,7 @@ def tinkergraph: ULayer[Has[GraphTraversalSource]] =
 
 def inMemory = tinkergraph >>> gremlin
 
-class GremlinP2P(g: GraphTraversalSource) extends P2P.Service:
+class GremlinP2P(g: GraphTraversalSource) extends P2P:
   def offerChannel(c: ChannelAnnouncement): Task[Unit] =
     val n1 = getOrCreateNode(c.nodeId1)
     val n2 = getOrCreateNode(c.nodeId2)

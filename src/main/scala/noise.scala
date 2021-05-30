@@ -211,12 +211,12 @@ final class HandshakeState(
   def nextExpected =
     new HandshakeState(s, e, rs, re, role, patterns, symmetric, expected.tail)
 
-  val aaa: URIO[Keygen, (HandshakeState, ByteVector)] =
+  val aaa: URIO[Has[Keygen], (HandshakeState, ByteVector)] =
     UIO.succeed((this, ByteVector(0)))
 
   def writeMessage(
       payload: ByteVector
-  ): ZIO[Keygen & Has[Secp256k1], HandshakeError, HandshakeResult] =
+  ): ZIO[Has[Keygen] & Has[Secp256k1], HandshakeError, HandshakeResult] =
     ZIO.environment[Has[Secp256k1]].map(_.get).flatMap { secp =>
       patterns.headOption match
         case None => ???
