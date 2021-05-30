@@ -20,17 +20,34 @@ def valid(
     c: Message.ChannelAnnouncement
 ): URIO[Has[Secp256k1], Either[Invalid, Message]] =
   val hash = doubleSHA256(b.drop(2 + 256))
-  verifySignature(
-    c.m.nodeSignature1.digitalSignature,
-    hash,
-    c.m.nodeId1.publicKey
-  ).zipWith(
-    verifySignature(
-      c.m.nodeSignature2.digitalSignature,
-      hash,
-      c.m.nodeId2.publicKey
+  URIO
+    .collectAll(
+      NonEmptyChunk(
+        verifySignature(
+          c.m.nodeSignature1.digitalSignature,
+          hash,
+          c.m.nodeId1.publicKey
+        ),
+        verifySignature(
+          c.m.nodeSignature2.digitalSignature,
+          hash,
+          c.m.nodeId2.publicKey
+        ),
+        verifySignature(
+          c.m.bitcoinSignature1.digitalSignature,
+          hash,
+          c.m.bitcoinKey1.publicKey
+        ),
+        verifySignature(
+          c.m.bitcoinSignature2.digitalSignature,
+          hash,
+          c.m.bitcoinKey2.publicKey
+        )
+      )
     )
-  )((v1, v2) => if v1 & v2 then Right(c) else Left(Invalid.Signature(c)))
+    .map(vs =>
+      if vs.forall(_ == true) then Right(c) else Left(Invalid.Signature(c))
+    )
 
 def valid(
     b: ByteVector,
@@ -54,6 +71,7 @@ def validateSignatures(
 
 def validateTxOutput(b: ByteVector, m: Message): Either[Invalid, Message] =
   m match
+    // <<Channel announcement tx output>>
     case Message.ChannelAnnouncement(c, Some(spk)) =>
       val multisig = MultiSignatureScriptPubKey(
         2,
@@ -62,8 +80,9 @@ def validateTxOutput(b: ByteVector, m: Message): Either[Invalid, Message] =
       // TODO: can this be done more elegantly?
       if spk == "0020" + sha256(multisig.asmBytes).hex then Right(m)
       else Left(Invalid.TxOutputNotUnspent)
-    case Message.ChannelAnnouncement(_, None) => Left(Invalid.TxOutputNotUnspent)
-    case _                                    => Right(m)
+    case Message.ChannelAnnouncement(_, None) =>
+      Left(Invalid.TxOutputNotUnspent)
+    case _ => Right(m)
 
 def validateChain(
     conf: perun.peer.Configuration,
