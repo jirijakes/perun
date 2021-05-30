@@ -43,12 +43,9 @@ def start(
     rk: CipherState,
     sk: CipherState
 ): ZIO[
-  Has[Store] &
-    Clock &
-    Console &
+  Has[Store] & Clock & Console &
     // Has[P2P] &
-    Has[Secp256k1] &
-    Has[Rpc],
+    Has[Secp256k1] & Has[Rpc],
   Nothing,
   Unit
 ] =
@@ -68,7 +65,11 @@ def start(
       .fromHub(hr)
       .map(b => perun.proto.decode(b).map((b, _)))
       .collect { case Right(m) => m }
-      .mapMParUnordered(10) {
+      .mapMParUnordered(100) {
+        case (b, Message.ChannelAnnouncement(c, _)) =>
+          txout(c.shortChannelId).map(out =>
+            (b, Message.ChannelAnnouncement(c, out.map(_.scriptPubKey.hex)))
+          )
         case x => UIO(x)
       }
       .partitionEither(validate(conf))
@@ -82,55 +83,50 @@ def start(
             case Message.Init(_)              => UIO(Response.Ignore)
             case Message.Pong(_)              => UIO(Response.Ignore)
             case Message.ReplyChannelRange(_) => UIO(Response.Ignore)
-            case Message.NodeAnnouncement(n) => UIO(Response.Ignore)
-              // offerNode(n).ignore.as(Response.Ignore)
-            case Message.ChannelAnnouncement(c) => UIO(Response.Ignore)
-              // offerChannel(c).ignore.as(Response.Ignore)
+            case Message.NodeAnnouncement(n)  => UIO(Response.Ignore)
+            // offerNode(n).ignore.as(Response.Ignore)
+            case Message.ChannelAnnouncement(c, _) => UIO(Response.Ignore)
+            // offerChannel(c).ignore.as(Response.Ignore)
             case Message.ChannelUpdate(c)     => UIO(Response.Ignore)
             case Message.QueryChanellRange(q) => UIO(Response.Ignore)
           }
 
         val s2 = errs
           .mapM {
-            case Invalid.Signature(Message.ChannelAnnouncement(c)) =>
+            case Invalid.Signature(Message.ChannelAnnouncement(c, _)) =>
               putStrLn("BOOOM").as(Response.Ignore)
             case Invalid.Signature(Message.NodeAnnouncement(c)) =>
               putStrLn("BOOOM").as(Response.Ignore)
             // <<Ignore unknown chain messages>>
             case Invalid.UnknownChain =>
               putStrLn("BOOOM").as(Response.Ignore)
+            // <Ignore spent tx output>>
+            case Invalid.TxOutputNotUnspent =>
+              putStrLn("NOT LN UNSPENT OUTPUT").as(Response.Ignore)
             case _ => UIO(Response.Ignore)
           }
 
         s1.merge(s2).foreach {
-          case Response.Ignore  => ZIO.unit
-          case Response.Send(m) => hw.publish(m).unit
+          case Response.Send(m)        => hw.publish(m).unit
+          case Response.Ignore         => ZIO.unit
+          case Response.FailConnection => ZIO.unit
         }
       }
       .fork
-    f1 <- in
-      .transduce(decrypt(rk))
-      .foreach(b => hr.publish(b))
-      // .map(b => (perun.proto.decode(b), b))
-      // .foreach {
-      // case (Right(m), b) => putStrLn(s"Received: $m") *> hr.publish(m)
-      // case (Left(e), _)  => ZIO.unit // putStrLn("Error: " + e)
-      // }
-      .fork
-    f3 <- ZStream
+    _ <- in.transduce(decrypt(rk)).foreach(b => hr.publish(b)).fork
+    _ <- ZStream
       .fromHub(hw)
       .tap(i => putStrLn(s"Sending: $i"))
       .map(x => perun.proto.encode(x))
       .transduce(encrypt(sk))
       .run(out)
       .fork
-    _ <- ZIO.sleep(1.second) *> hw
+    _ <- (ZIO.sleep(1.second) *> hw
       .publish(
         Message.Init(
           Init(Features(hex"0x8000000000000000002822aaa2"), List(Chain.Testnet))
         )
-      )
-      .fork
+      )).fork
     // _ <- ZIO.sleep(2.second) *> hw
     // .publish(
     // Message.QueryChanellRange(
@@ -138,16 +134,14 @@ def start(
     // )
     // )
     // .fork
-    _ <- ZIO.sleep(3.second) *> hw
+    _ <- (ZIO.sleep(3.second) *> hw
       .publish(
         Message.GossipTimestampFilter(
           GossipTimestampFilter(Chain.Testnet, 1621345431, 2000000000)
         )
-      )
-      .fork
+      )).fork
     // _ <- perun.proto.ping.schedule(hr, hw).fork
-    _ <- f1.join.mapError(s => new Exception(s.toString)).orDie
-    _ <- close
+    _ <- ZIO.never
   yield ()
 
 /** Result of calling [[decryptOne]]. */

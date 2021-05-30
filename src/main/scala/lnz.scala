@@ -94,11 +94,9 @@ object lnz extends App:
   lazy val dep: ZLayer[
     zio.blocking.Blocking,
     Nothing,
-    Has[Secp256k1] &
-      Has[Rpc] &
+    Has[Secp256k1] & Has[Rpc] &
       // Has[perun.db.p2p.P2] &
-      Has[Keygen] &
-      Has[perun.db.store.Store]
+      Has[Keygen] & Has[perun.db.store.Store]
   ] =
     perun.crypto.keygen.liveKeygen ++
       store.live("jdbc:hsqldb:file:testdb").orDie ++
@@ -128,7 +126,8 @@ object lnz extends App:
                 peer.rk,
                 peer.sk
               )
-              .forkDaemon
+              .ensuring(c.close())
+              .fork
           }
       }
       .onInterrupt(ZIO.effectTotal(println("DOOONE")))

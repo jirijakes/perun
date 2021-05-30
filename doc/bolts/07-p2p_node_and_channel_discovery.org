@@ -2,15 +2,15 @@
 
 * Channel announcement
 
-** Receiving [1/6]
+** Receiving [2/6]
 
    - [ ] MUST verify the integrity AND authenticity of the message by verifying the signatures.
 
    - [ ] if there is an unknown even bit in the ~features~ field:
      MUST NOT attempt to route messages through the channel.
 
-   - [ ] if the ~short_channel_id~'s output does NOT correspond to a P2WSH (using ~bitcoin_key_1~ and ~bitcoin_key_2~, as specified in BOLT #3) OR the output is spent:
-     MUST ignore the message.
+   - [X] if the ~short_channel_id~'s output does NOT correspond to a P2WSH (using ~bitcoin_key_1~ and ~bitcoin_key_2~, as specified in BOLT #3) OR the output is spent:
+     MUST ignore the message. ([[file:~/dev/scala/lnz/src/main/scala/proto/bolt/validate.scala::Channel announcement tx output][ref1]], [[file:~/dev/scala/lnz/src/main/scala/peer.scala::Ignore spent tx output][ref2]])
 
    - [X] if the specified ~chain_hash~ is unknown to the receiver:
      MUST ignore the message. ([[file:../../src/main/scala/proto/bolt/validate.scala::Channel announcement chain hash][ref1]], [[file:../../src/main/scala/peer.scala::Ignore unknown chain messages][ref2]])

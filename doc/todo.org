@@ -23,4 +23,4 @@
   - [X] Add ZMQ
     - https://github.com/bitcoin/bitcoin/blob/master/doc/zmq.md
     - https://github.com/zeromq/jeromq + https://github.com/zeromq/jeromq/blob/master/src/test/java/guide/clonecli1.java
-  - [ ] Move HTTP client from STTP to zio-web when available
+  - [ ] Move HTTP client from STTP to zio-http when better
