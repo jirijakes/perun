@@ -18,9 +18,9 @@ enum Invalid:
 def valid(
     b: ByteVector,
     c: Message.ChannelAnnouncement
-): URIO[Has[Secp256k1], Either[Invalid, Message]] =
+): ZIO[Has[Secp256k1], Invalid, Message] =
   val hash = doubleSHA256(b.drop(2 + 256))
-  URIO
+  ZIO
     .collectAll(
       NonEmptyChunk(
         verifySignature(
@@ -45,29 +45,31 @@ def valid(
         )
       )
     )
-    .map(vs =>
-      if vs.forall(_ == true) then Right(c) else Left(Invalid.Signature(c))
+    .flatMap(vs =>
+      if vs.forall(_ == true) then ZIO.succeed(c)
+      else ZIO.fail(Invalid.Signature(c))
     )
 
 def valid(
     b: ByteVector,
     c: Message.NodeAnnouncement
-): URIO[Has[Secp256k1], Either[Invalid, Message]] =
+): ZIO[Has[Secp256k1], Invalid, Message] =
   verifySignature(
     c.m.signature.digitalSignature,
     doubleSHA256(b.drop(2 + 64)),
     c.m.nodeId.publicKey
   )
-    .map(v => if v then Right(c) else Left(Invalid.Signature(c)))
+    .flatMap(v => if v then ZIO.succeed(c) else ZIO.fail(Invalid.Signature(c)))
 
 def validateSignatures(
     b: ByteVector,
     m: Message
-): URIO[Has[Secp256k1], Either[Invalid, Message]] =
+): ZIO[Has[Secp256k1], Invalid, Message] =
   m match
+    // <<Channel announcement signatures>>
     case m: Message.ChannelAnnouncement => valid(b, m)
     case m: Message.NodeAnnouncement    => valid(b, m)
-    case _                              => UIO(Right(m))
+    case _                              => ZIO.succeed(m)
 
 def validateTxOutput(b: ByteVector, m: Message): Either[Invalid, Message] =
   m match
@@ -106,6 +108,8 @@ def validate(conf: perun.peer.Configuration)(
     b: ByteVector,
     m: Message
 ): URIO[Has[Secp256k1], Either[Invalid, Message]] =
-  validateSignatures(b, m) *> UIO(validateChain(conf, m)) *> UIO(
-    validateTxOutput(b, m)
-  )
+  (
+    validateSignatures(b, m) *>
+      ZIO.fromEither(validateChain(conf, m)) *>
+      ZIO.fromEither(validateTxOutput(b, m))
+  ).either

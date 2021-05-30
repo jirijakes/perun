@@ -93,8 +93,9 @@ def start(
 
         val s2 = errs
           .mapM {
+            // <<Channel announcement signature fail connection>>
             case Invalid.Signature(Message.ChannelAnnouncement(c, _)) =>
-              putStrLn("BOOOM").as(Response.Ignore)
+              UIO(Response.FailConnection)
             case Invalid.Signature(Message.NodeAnnouncement(c)) =>
               putStrLn("BOOOM").as(Response.Ignore)
             // <<Ignore unknown chain messages>>
