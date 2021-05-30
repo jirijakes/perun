@@ -18,6 +18,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.*
 import zio.*
 
+import perun.p2p.*
 import perun.db.p2p.P2P
 import perun.proto.codecs.*
 import perun.proto.gossip.{ChannelAnnouncement, NodeAnnouncement}
@@ -41,6 +42,15 @@ def tinkergraph: ULayer[Has[GraphTraversalSource]] =
 def inMemory = tinkergraph >>> gremlin
 
 class GremlinP2P(g: GraphTraversalSource) extends P2P:
+  def findChannel(shortChannelId: ShortChannelId): Task[Option[Channel]] =
+    val x = g
+      .E()
+      .has("channel", "shortChannelId", shortChannelId.toString)
+      .bothV()
+      .properties("nodeId")
+      .toList
+    ???
+
   def offerChannel(c: ChannelAnnouncement): Task[Unit] =
     val n1 = getOrCreateNode(c.nodeId1)
     val n2 = getOrCreateNode(c.nodeId2)

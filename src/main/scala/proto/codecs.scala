@@ -111,11 +111,11 @@ val signature: Codec[Signature] =
   bytes(64).xmap(ECDigitalSignature.fromBytes, _.bytes)
 
 case class ShortChannelId(block: Int, transaction: Int, output: Int):
-  override def toString =
-    import fansi.Color.*
-    s"${Cyan(block.toString)}${DarkGray("x")}${Yellow(
-      transaction.toString
-    )}${DarkGray("x")}${LightGreen(output.toString)}"
+  override def toString = s"${block}x${transaction}x${output}"
+    // import fansi.Color.*
+    // s"${Cyan(block.toString)}${DarkGray("x")}${Yellow(
+      // transaction.toString
+    // )}${DarkGray("x")}${LightGreen(output.toString)}"
 
 given Ordering[ShortChannelId] =
   Ordering.by(s => (s.block, s.transaction, s.output))

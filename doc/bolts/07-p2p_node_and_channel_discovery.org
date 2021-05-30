@@ -1,5 +1,7 @@
 #+TITLE: BOLT #7: P2P Node and Channel Discovery
 
+Source: [[https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routing-gossip.md]]
+
 * Channel announcement
 
 ** Receiving [3/6]
@@ -44,14 +46,14 @@
 
 * Node announcement
 
-** Receiving [0/9]
+** Receiving [1/9]
 
     - [ ] if ~node_id~ is NOT a valid compressed public key:
       SHOULD fail the connection.
       MUST NOT process the message further.
 
-    - [ ] if ~signature~ is NOT a valid signature (using ~node_id~ of the double-SHA256 of the entire message following the ~signature~ field, including any future fields appended to the end):
-      SHOULD fail the connection.
+    - [X] if ~signature~ is NOT a valid signature (using ~node_id~ of the double-SHA256 of the entire message following the ~signature~ field, including any future fields appended to the end):
+      SHOULD fail the connection. ([[file:/usr/home/jiri/dev/scala/lnz/src/main/scala/proto/bolt/validate.scala::Node announcement signatures][ref1]], [[file:/usr/home/jiri/dev/scala/lnz/src/main/scala/peer.scala::Node announcement signature fail connection][ref2]])
       MUST NOT process the message further.
 
     - [ ] if ~features~ field contains unknown even bits:
@@ -71,9 +73,9 @@
       SHOULD ignore the message.
 
     - [ ] otherwise:
-      - [ ] if timestamp is greater than the last-received node_announcement from this node_id:
+      - [ ] if ~timestamp~ is greater than the last-received ~node_announcement~ from ~this node_id~:
         SHOULD queue the message for rebroadcasting.
         MAY choose NOT to queue messages longer than the minimum expected length.
 
-    - [ ] MAY use rgb_color AND alias to reference nodes in interfaces.
+    - [ ] MAY use ~rgb_color~ AND ~alias~ to reference nodes in interfaces.
       SHOULD insinuate their self-signed origins.

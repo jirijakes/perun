@@ -67,6 +67,7 @@ def valid(
 def validateSignatures(b: ByteVector): ValidateM[Has[Secp256k1]] =
   // <<Channel announcement signatures>>
   case m: Message.ChannelAnnouncement => valid(b, m)
+  // <<Node announcement signatures>>
   case m: Message.NodeAnnouncement    => valid(b, m)
 
 /** Perform validation of transaction outputs according to messages'
@@ -81,7 +82,7 @@ def validateTxOutput: Validate =
    * unspent. This is the only case when we need to perform its validation.
    * <<Channel announcement tx output>>
    */
-  case m @ Message.ChannelAnnouncement(c, Some(spk)) =>
+  case m @ Message.ChannelAnnouncement(c, Some(spk), _) =>
     val multisig = MultiSignatureScriptPubKey(
       2,
       List(c.bitcoinKey1.publicKey, c.bitcoinKey2.publicKey).sortBy(_.hex)
@@ -89,11 +90,11 @@ def validateTxOutput: Validate =
     // TODO: can this be done more elegantly?
     if spk == "0020" + sha256(multisig.asmBytes).hex then Right(m)
     else Left(Invalid.TxOutputNotUnspent)
-  case Message.ChannelAnnouncement(_, None) => Left(Invalid.TxOutputNotUnspent)
+  case Message.ChannelAnnouncement(_, None, _) => Left(Invalid.TxOutputNotUnspent)
 
 def validateChain(conf: perun.peer.Configuration): Validate =
   // <<Channel announcement chain hash>>
-  case Message.ChannelAnnouncement(c, _) if c.chain != conf.chain =>
+  case Message.ChannelAnnouncement(c, _, _) if c.chain != conf.chain =>
     Left(Invalid.UnknownChain)
 
 /** Perform required steps to validate incoming message. These are described

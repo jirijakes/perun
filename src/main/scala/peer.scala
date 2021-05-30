@@ -65,10 +65,12 @@ def start(
       .map(b => perun.proto.decode(b).map((b, _)))
       .collect { case Right(m) => m }
       .mapMParUnordered(100) {
-        case (b, Message.ChannelAnnouncement(c, _)) =>
-          txout(c.shortChannelId).map(out =>
-            (b, Message.ChannelAnnouncement(c, out.map(_.scriptPubKey.hex)))
-          )
+        case (b, Message.ChannelAnnouncement(c, _, _)) =>
+          txout(c.shortChannelId)
+            .zipPar(findChannel(c.shortChannelId))
+            .map((out, chan) =>
+              (b, Message.ChannelAnnouncement(c, out.map(_.scriptPubKey.hex), chan))
+            )
         case x => UIO(x)
       }
       .partitionEither(validate(conf))
@@ -84,7 +86,7 @@ def start(
             case Message.ReplyChannelRange(_) => UIO(Response.Ignore)
             case Message.NodeAnnouncement(n) =>
               offerNode(n).ignore.as(Response.Ignore)
-            case Message.ChannelAnnouncement(c, _) =>
+            case Message.ChannelAnnouncement(c, _, _) =>
               offerChannel(c).ignore.as(Response.Ignore)
             case Message.ChannelUpdate(c)     => UIO(Response.Ignore)
             case Message.QueryChanellRange(q) => UIO(Response.Ignore)
@@ -93,10 +95,11 @@ def start(
         val s2 = errs
           .mapM {
             // <<Channel announcement signature fail connection>>
-            case Invalid.Signature(Message.ChannelAnnouncement(c, _)) =>
+            case Invalid.Signature(Message.ChannelAnnouncement(c, _, _)) =>
               UIO(Response.FailConnection)
+            // <<Node announcement signature fail connection>>
             case Invalid.Signature(Message.NodeAnnouncement(c)) =>
-              putStrLn("BOOOM").as(Response.Ignore)
+              UIO(Response.FailConnection)
             // <<Ignore unknown chain messages>>
             case Invalid.UnknownChain =>
               putStrLn("BOOOM").as(Response.Ignore)
