@@ -26,6 +26,7 @@ object lnz extends App:
   import util.*
 
   import perun.db.*
+  import perun.db.p2p.*
   import perun.net.rpc.*
 
   val initiator = HandshakeState.initiator(rs, ls1)
@@ -94,13 +95,12 @@ object lnz extends App:
   lazy val dep: ZLayer[
     zio.blocking.Blocking,
     Nothing,
-    Has[Secp256k1] & Has[Rpc] &
-      // Has[perun.db.p2p.P2] &
-      Has[Keygen] & Has[perun.db.store.Store]
+    Has[Secp256k1] & Has[Rpc] & Has[P2P] &
+      Has[Keygen] // & Has[perun.db.store.Store]
   ] =
     perun.crypto.keygen.liveKeygen ++
-      store.live("jdbc:hsqldb:file:testdb").orDie ++
-      // tinkerpop.inMemory ++
+      // store.live("jdbc:hsqldb:file:testdb").orDie ++
+      tinkerpop.inMemory ++
       (
         HttpClientZioBackend.layer().orDie >>>
           bitcoind(

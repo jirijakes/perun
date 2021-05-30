@@ -15,6 +15,9 @@ enum Invalid:
   case UnknownChain
   case TxOutputNotUnspent
 
+type Validate = PartialFunction[Message, Either[Invalid, Message]]
+type ValidateM[R] = PartialFunction[Message, ZIO[R, Invalid, Message]]
+
 def valid(
     b: ByteVector,
     c: Message.ChannelAnnouncement
@@ -61,40 +64,37 @@ def valid(
   )
     .flatMap(v => if v then ZIO.succeed(c) else ZIO.fail(Invalid.Signature(c)))
 
-def validateSignatures(
-    b: ByteVector,
-    m: Message
-): ZIO[Has[Secp256k1], Invalid, Message] =
-  m match
-    // <<Channel announcement signatures>>
-    case m: Message.ChannelAnnouncement => valid(b, m)
-    case m: Message.NodeAnnouncement    => valid(b, m)
-    case _                              => ZIO.succeed(m)
+def validateSignatures(b: ByteVector): ValidateM[Has[Secp256k1]] =
+  // <<Channel announcement signatures>>
+  case m: Message.ChannelAnnouncement => valid(b, m)
+  case m: Message.NodeAnnouncement    => valid(b, m)
 
-def validateTxOutput(b: ByteVector, m: Message): Either[Invalid, Message] =
-  m match
-    // <<Channel announcement tx output>>
-    case Message.ChannelAnnouncement(c, Some(spk)) =>
-      val multisig = MultiSignatureScriptPubKey(
-        2,
-        List(c.bitcoinKey1.publicKey, c.bitcoinKey2.publicKey).sortBy(_.hex)
-      )
-      // TODO: can this be done more elegantly?
-      if spk == "0020" + sha256(multisig.asmBytes).hex then Right(m)
-      else Left(Invalid.TxOutputNotUnspent)
-    case Message.ChannelAnnouncement(_, None) =>
-      Left(Invalid.TxOutputNotUnspent)
-    case _ => Right(m)
+/** Perform validation of transaction outputs according to messages'
+  * specifications.
+  *
+  * @param m message to validate
+  * @return `Left` with details if message invalid; otherwise `Right` with original message
+  */
+def validateTxOutput: Validate =
+  /* Channel announcement's `spk` is `None` if the relevant transaction
+   * has never existed or is already spent. Only when it is `Some`, it is
+   * unspent. This is the only case when we need to perform its validation.
+   * <<Channel announcement tx output>>
+   */
+  case m @ Message.ChannelAnnouncement(c, Some(spk)) =>
+    val multisig = MultiSignatureScriptPubKey(
+      2,
+      List(c.bitcoinKey1.publicKey, c.bitcoinKey2.publicKey).sortBy(_.hex)
+    )
+    // TODO: can this be done more elegantly?
+    if spk == "0020" + sha256(multisig.asmBytes).hex then Right(m)
+    else Left(Invalid.TxOutputNotUnspent)
+  case Message.ChannelAnnouncement(_, None) => Left(Invalid.TxOutputNotUnspent)
 
-def validateChain(
-    conf: perun.peer.Configuration,
-    m: Message
-): Either[Invalid, Message] =
-  m match
-    // <<Channel announcement chain hash>>
-    case Message.ChannelAnnouncement(c, _) if c.chain != conf.chain =>
-      Left(Invalid.UnknownChain)
-    case _ => Right(m)
+def validateChain(conf: perun.peer.Configuration): Validate =
+  // <<Channel announcement chain hash>>
+  case Message.ChannelAnnouncement(c, _) if c.chain != conf.chain =>
+    Left(Invalid.UnknownChain)
 
 /** Perform required steps to validate incoming message. These are described
   * in relevant BOLTs.
@@ -109,7 +109,7 @@ def validate(conf: perun.peer.Configuration)(
     m: Message
 ): URIO[Has[Secp256k1], Either[Invalid, Message]] =
   (
-    validateSignatures(b, m) *>
-      ZIO.fromEither(validateChain(conf, m)) *>
-      ZIO.fromEither(validateTxOutput(b, m))
+    validateSignatures(b).applyOrElse(m, ZIO.succeed) *>
+      ZIO.fromEither(validateChain(conf).applyOrElse(m, Right(_))) *>
+      ZIO.fromEither(validateTxOutput.applyOrElse(m, Right(_)))
   ).either

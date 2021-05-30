@@ -1,4 +1,4 @@
-package perun.db
+package perun.db.store
 
 import zio.*
 import zio.stream.*
@@ -6,9 +6,9 @@ import zio.test.*
 
 import Assertion.*
 
-object store extends DefaultRunnableSpec:
+object StoreTest extends DefaultRunnableSpec:
 
-  import perun.db.*
+  import perun.db.store.*
 
   val spec = suite("db")(
     testM("primitive") {
@@ -22,7 +22,7 @@ object store extends DefaultRunnableSpec:
         query("SELECT * FROM tbl ORDER BY id", _.getInt(1))
 
       val y = x.runCollect
-        .provideCustomLayer(Store.live("jdbc:hsqldb:mem:inmem"))
+        .provideCustomLayer(live("jdbc:hsqldb:mem:inmem"))
         .orDie
 
       assertM(y)(equalTo(Chunk(1, 2, 3)))

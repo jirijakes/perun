@@ -65,9 +65,9 @@ class GremlinP2P(g: GraphTraversalSource) extends P2P:
       .property("color", n.color.hex)
       .property("alias", n.alias.toString)
       .property("timestamp", n.timestamp)
-    println(">>> " + n1)
+    // println(">>> " + n1)
     Task(n1.next())
-      .tapCause(e => Task(println("######> " + e.prettyPrint)))
+      // .tapCause(e => Task(println("######> " + e.prettyPrint)))
       .unit
 
 def getOrCreateNode(id: NodeId): GraphTraversal[Nothing, Vertex] =
