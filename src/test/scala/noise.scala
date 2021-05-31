@@ -1,4 +1,3 @@
-import org.bitcoins.crypto.ECPrivateKey
 import scodec.bits.ByteVector
 import zio.*
 import zio.stream.*
@@ -8,6 +7,7 @@ import Assertion.*
 import lnz.handshake
 import perun.test.*
 import _root_.noise.*
+import perun.proto.codecs.*
 
 object noise extends DefaultRunnableSpec:
 
@@ -28,7 +28,7 @@ object noise extends DefaultRunnableSpec:
         )
         val responder =
           HandshakeState.responder(
-            ECPrivateKey(
+            PrivateKey.fromHex(
               "2121212121212121212121212121212121212121212121212121212121212121"
             )
           )

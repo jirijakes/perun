@@ -1,11 +1,12 @@
 package perun.crypto.keygen
 
-import org.bitcoins.crypto.ECPrivateKey
 import zio.*
 import zio.prelude.NonEmptyList
 
+import perun.proto.codecs.PrivateKey
+
 trait Keygen:
-  def generateKeypair: UIO[ECPrivateKey]
+  def generateKeypair: UIO[PrivateKey]
 
 /** Creates Keygen which generates truly random keys.
   *
@@ -25,8 +26,7 @@ trait Keygen:
 val liveKeygen: ULayer[Has[Keygen]] =
   ZLayer.succeed(
     new Keygen:
-      def generateKeypair: UIO[ECPrivateKey] =
-        UIO.effectTotal(ECPrivateKey.freshPrivateKey)
+      def generateKeypair: UIO[PrivateKey] = PrivateKey.freshPrivateKey
   )
 
 /** Creates Keygen which returns the same keys in the same order ad infinitum.
@@ -53,14 +53,14 @@ def repeat(key0: String, other: String*): ULayer[Has[Keygen]] =
     .make(nel)
     .map { ref =>
       new Keygen:
-        def generateKeypair: UIO[ECPrivateKey] =
+        def generateKeypair: UIO[PrivateKey] =
           ref.modify {
-            case NonEmptyList.Single(h)  => (ECPrivateKey.fromHex(h), nel)
-            case NonEmptyList.Cons(h, t) => (ECPrivateKey.fromHex(h), t)
+            case NonEmptyList.Single(h)  => (PrivateKey.fromHex(h), nel)
+            case NonEmptyList.Cons(h, t) => (PrivateKey.fromHex(h), t)
           }
 
     }
     .toLayer
 
-def generateKeypair: URIO[Has[Keygen], ECPrivateKey] =
+def generateKeypair: URIO[Has[Keygen], PrivateKey] =
   ZIO.accessM(x => x.get.generateKeypair)

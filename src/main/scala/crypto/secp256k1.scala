@@ -5,6 +5,8 @@ import zio.*
 import scodec.bits.ByteVector
 import scala.annotation.targetName
 
+import perun.proto.codecs.*
+
 import org.bitcoins.crypto.{
   ECDigitalSignature,
   ECPublicKey,
@@ -17,7 +19,7 @@ enum Error:
   case CouldNotInitialize
 
 trait Secp256k1:
-  def ecdh(sec: ECPrivateKey, pub: ECPublicKey): ByteVector
+  def ecdh(sec: PrivateKey, pub: PublicKey): ByteVector
   def verifySignature(
       s: ECDigitalSignature,
       h: DoubleSha256Digest,
@@ -53,12 +55,12 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
     .map { (ctx, lib, cb) =>
       new Secp256k1:
         val x = cb
-        def ecdh(sec: ECPrivateKey, pub: ECPublicKey): ByteVector =
+        def ecdh(sec: PrivateKey, pub: PublicKey): ByteVector =
           val key = unsafe.Pubkey.empty
           val keyr = lib.secp256k1_ec_pubkey_parse(
             ctx,
             key,
-            pub.bytes.toArray,
+            pub.toBytes.toArray,
             pub.byteSize.toInt
           )
           val out = Array.ofDim[Byte](32)
@@ -66,7 +68,7 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
             ctx,
             out,
             key,
-            sec.bytes.toArray,
+            sec.toBytes.toArray,
             Pointer.NULL,
             Pointer.NULL
           )

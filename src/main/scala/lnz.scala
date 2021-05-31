@@ -6,17 +6,15 @@ import sttp.client3.httpclient.zio.HttpClientZioBackend
 
 object lnz extends App:
 
-  val x = org.bitcoins.crypto.ECPublicKey.dummy
-
-  val ls1 = org.bitcoins.crypto.ECPrivateKey(
+  val ls1 = perun.proto.codecs.PrivateKey.fromHex(
     "1111111111111111111111111111111111111111111111111111111111111111"
   )
 
-  val ls2 = org.bitcoins.crypto.ECPrivateKey(
+  val ls2 = perun.proto.codecs.PrivateKey.fromHex(
     "2121212121212121212121212121212121212121212121212121212121212121"
   )
 
-  val rs = org.bitcoins.crypto.ECPublicKey(
+  val rs = perun.proto.codecs.PublicKey.fromHex(
     "028d7500dd4c12685d1f568b4c2b5048e8534b873319f3a8daa612b469132ec7f7"
   )
 

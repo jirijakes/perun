@@ -2,10 +2,11 @@ package perun.proto.codecs
 
 import java.net.{Inet4Address, Inet6Address, InetAddress}
 
-import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
+import org.bitcoins.crypto.{ECDigitalSignature, ECPrivateKey, ECPublicKey}
 import scodec.*
 import scodec.bits.*
 import scodec.codecs.*
+import zio.UIO
 
 import perun.proto.*
 
@@ -44,11 +45,33 @@ val error: Codec[Error] =
 //   def message: String = s"does not contain valid signature"
 //   def pushContext(ctx: String): Err = copy(context = ctx :: context)
 
-opaque type NodeId = ECPublicKey
+opaque type PrivateKey = ECPrivateKey
 
-extension (id: NodeId) def publicKey: ECPublicKey = id
+extension (sec: PrivateKey)
+  def publicKey: PublicKey = sec.publicKey
+  def toBytes: ByteVector = sec.bytes
 
-extension (id: NodeId) def hex: String = id.hex
+object PrivateKey:
+  def freshPrivateKey: UIO[PrivateKey] =
+    UIO.effectTotal(ECPrivateKey.freshPrivateKey)
+  def fromHex(hex: String): PrivateKey = ECPrivateKey.fromHex(hex)
+
+opaque type PublicKey = ECPublicKey
+
+extension (pub: PublicKey)
+  def asNodeId: NodeId = pub
+  def toBytes: ByteVector = pub.bytes
+  def byteSize: Long = pub.byteSize
+
+object PublicKey:
+  def fromBytes(bytes: ByteVector): PublicKey = ECPublicKey.fromBytes(bytes)
+  def fromHex(hex: String): PublicKey = ECPublicKey.fromHex(hex)
+
+opaque type NodeId = PublicKey
+
+extension (id: NodeId)
+  def publicKey: ECPublicKey = id
+  def hex: String = id.hex
 
 val nodeId: Codec[NodeId] = bytes(33).exmap(
   b =>
@@ -112,10 +135,10 @@ val signature: Codec[Signature] =
 
 case class ShortChannelId(block: Int, transaction: Int, output: Int):
   override def toString = s"${block}x${transaction}x${output}"
-    // import fansi.Color.*
-    // s"${Cyan(block.toString)}${DarkGray("x")}${Yellow(
-      // transaction.toString
-    // )}${DarkGray("x")}${LightGreen(output.toString)}"
+// import fansi.Color.*
+// s"${Cyan(block.toString)}${DarkGray("x")}${Yellow(
+// transaction.toString
+// )}${DarkGray("x")}${LightGreen(output.toString)}"
 
 given Ordering[ShortChannelId] =
   Ordering.by(s => (s.block, s.transaction, s.output))

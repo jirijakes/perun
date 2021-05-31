@@ -9,6 +9,7 @@ import org.bouncycastle.crypto.params.KeyParameter
 import scodec.bits.ByteVector
 import zio.*
 
+import perun.proto.codecs.*
 import perun.crypto.keygen.*
 import perun.crypto.secp256k1.*
 import perun.crypto.{DecryptionError, chacha}
@@ -32,6 +33,7 @@ object Binary:
   given Binary[String] = s => ByteVector.view(s.getBytes)
   given Binary[Array[Byte]] = ByteVector.view
   given Binary[ECPublicKey] = _.compressed.bytes
+  given Binary[PublicKey] = _.publicKey.compressed.bytes
 
 enum HandshakeError:
   case InvalidCiphertext
@@ -121,10 +123,10 @@ enum HandshakeResult:
   case Done(c1: CipherState, c2: CipherState)
 
 final class HandshakeState(
-    val s: ECPrivateKey,
-    val e: Option[ECPrivateKey],
-    val rs: Option[ECPublicKey],
-    val re: Option[ECPublicKey],
+    val s: PrivateKey,
+    val e: Option[PrivateKey],
+    val rs: Option[PublicKey],
+    val re: Option[PublicKey],
     val role: HandshakeRole,
     patterns: List[List[Token]],
     val symmetric: SymmetricState,
@@ -151,7 +153,7 @@ final class HandshakeState(
   def sym(f: SymmetricState => SymmetricState) =
     new HandshakeState(s, e, rs, re, role, patterns, f(symmetric), expected)
 
-  def setE(newE: ECPrivateKey) =
+  def setE(newE: PrivateKey) =
     new HandshakeState(
       s,
       Some(newE),
@@ -163,7 +165,7 @@ final class HandshakeState(
       expected
     )
 
-  def setRe(newRe: ECPublicKey) =
+  def setRe(newRe: PublicKey) =
     new HandshakeState(
       s,
       e,
@@ -175,7 +177,7 @@ final class HandshakeState(
       expected
     )
 
-  def setRs(newRs: ECPublicKey) =
+  def setRs(newRs: PublicKey) =
     new HandshakeState(
       s,
       e,
@@ -295,7 +297,7 @@ final class HandshakeState(
             Right(this)
           ) {
             case (Right(st), E) =>
-              val re = ECPublicKey.fromBytes(c)
+              val re = PublicKey.fromBytes(c)
               Right(st.setRe(re).mixHash(re))
             case (Right(st), EE) =>
               Right(st.mixKey(secp.ecdh(st.e.get, st.re.get)))
@@ -306,7 +308,7 @@ final class HandshakeState(
             case (Right(st), S) =>
               st.decryptAndHash(c)
                 .map((plaintext, nextHs) =>
-                  nextHs.setRs(ECPublicKey.fromBytes(plaintext))
+                  nextHs.setRs(PublicKey.fromBytes(plaintext))
                 )
             case (Right(st), SE) =>
               if st.role == HandshakeRole.Initiator then
@@ -334,8 +336,8 @@ object HandshakeState:
   val initsym =
     SymmetricState("Noise_XK_secp256k1_ChaChaPoly_SHA256", "lightning")
   def initiator(
-      rs: ECPublicKey,
-      s: ECPrivateKey
+      rs: PublicKey,
+      s: PrivateKey
   ): HandshakeState =
     new HandshakeState(
       s = s,
@@ -349,7 +351,7 @@ object HandshakeState:
     )
 
   def responder(
-      s: ECPrivateKey
+      s: PrivateKey
   ): HandshakeState =
     new HandshakeState(
       s = s,
