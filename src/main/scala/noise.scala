@@ -229,7 +229,7 @@ final class HandshakeState(
                 s.zipWith(generateKeypair) { case ((st, buf), e) =>
                   (
                     st.setE(e).mixHash(e.publicKey),
-                    buf ++ e.publicKey.compressed.bytes
+                    buf ++ e.publicKey.asECPublicKey.compressed.bytes
                   )
                 }
               case (s, ES) =>
@@ -255,7 +255,7 @@ final class HandshakeState(
               case (s, S) =>
                 s.map { (st, buf) =>
                   val (ciphertext, nextHs) =
-                    st.encryptAndHash(st.s.publicKey.compressed.bytes)
+                    st.encryptAndHash(st.s.publicKey.asECPublicKey.compressed.bytes)
                   (nextHs, buf ++ ciphertext)
                 }
               case (s, SE) =>

@@ -28,7 +28,7 @@ opaque type Signature = ECDigitalSignature
 
 extension (sec: PrivateKey)
   def toBytes: ByteVector = sec.bytes
-  def publicKey: PublicKey = sec.publicKey
+  def publicKey: perun.crypto.PublicKey = sec.publicKey
 
 object PrivateKey:
   def freshPrivateKey: UIO[PrivateKey] =

@@ -3,7 +3,7 @@ package perun.crypto.secp256k1
 import scala.annotation.targetName
 
 import com.sun.jna.*
-import org.bitcoins.crypto.{DoubleSha256Digest, Sha256Digest}
+import org.bitcoins.crypto.Sha256Digest
 import scodec.bits.ByteVector
 import zio.*
 
@@ -19,13 +19,13 @@ trait Secp256k1:
   def sign(sec: PrivateKey, h: Sha256Digest): Signature
   def verify(
       s: Signature,
-      h: DoubleSha256Digest,
+      h: Sha256Digest,
       k: NodeId | PublicKey
   ): Boolean
 
 def verifySignature(
     s: Signature,
-    h: DoubleSha256Digest,
+    h: Sha256Digest,
     k: NodeId | PublicKey
 ): URIO[Has[Secp256k1], Boolean] = ZIO.access(_.get.verify(s, h, k))
 
@@ -90,7 +90,7 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
           Signature.fromBytes(ByteVector.view(out))
         def verify(
             s: Signature,
-            h: DoubleSha256Digest,
+            h: Sha256Digest,
             k: NodeId | PublicKey
         ): Boolean =
           val sig = unsafe.Signature.empty

@@ -8,7 +8,7 @@ import zio.test.Assertion.*
 
 import io.circe.{Decoder, Json, parser}
 import scodec.bits.ByteVector
-import org.bitcoins.crypto.CryptoUtil.{doubleSHA256, sha256}
+import org.bitcoins.crypto.CryptoUtil.sha256
 
 import perun.crypto.*
 import org.bitcoins.crypto.Sha256Digest
@@ -51,7 +51,13 @@ object test extends DefaultRunnableSpec:
             assertM(signMessage(t.d, t.m))(equalTo(t.signature))
               .provideCustomLayer(native)
           )
+        },
+        testM("verify") {
+          checkM(vector)(t =>
+            assertM(verifySignature(t.signature, ???, t.d.publicKey))(
+              equalTo(true)
+            ).provideCustomLayer(native)
+          )
         }
-        // testM("verify")
       )
     )
