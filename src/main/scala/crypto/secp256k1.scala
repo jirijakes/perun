@@ -98,9 +98,7 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
           val sigr = lib.secp256k1_ecdsa_signature_parse_compact(
             ctx,
             sig,
-            k match
-              // case n: NodeId    => n.nodeIdAsPublicKey.bytes.toArray
-              case p: PublicKey => p.bytes.toArray
+            s.signatureToBytes.toArray
           )
           val key = unsafe.Pubkey.empty
           val keyr = lib.secp256k1_ec_pubkey_parse(
@@ -108,11 +106,11 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
             key,
             k match
               // case n: NodeId    => n.nodeIdAsPublicKey.bytes.toArray
-              case p: PublicKey => p.bytes.toArray
+              case p: PublicKey => p.publicKeyToBytes.toArray
             ,
             k match
               // case n: NodeId    => n.nodeIdAsPublicKey.byteSize.toInt
-              case p: PublicKey => p.byteSize.toInt
+              case p: PublicKey => p.publicKeyToBytes.size.toInt
           )
           val verr = lib.secp256k1_ecdsa_verify(ctx, sig, h.bytes.toArray, key)
           verr == 1
@@ -176,7 +174,6 @@ object unsafe:
         h: Array[Byte],
         k: Pubkey
     ): Int
-
     def secp256k1_ecdsa_sign(
         c: Context,
         s: Signature,

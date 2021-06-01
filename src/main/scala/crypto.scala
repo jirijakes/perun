@@ -52,7 +52,7 @@ object PublicKey:
   )
   given noise.Binary[PublicKey] = _.compressed.bytes
 
-// extension (s: Signature) def digitalSignature: ECDigitalSignature = s
+extension (s: Signature) def signatureToBytes: ByteVector = s.bytes
 
 object Signature:
   def fromBytes(b: ByteVector): Signature = ECDigitalSignature.fromBytes(b)
