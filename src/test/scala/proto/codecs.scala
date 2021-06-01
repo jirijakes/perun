@@ -1,7 +1,7 @@
 package perun.proto.codecs
 
-import scodec.{Attempt, DecodeResult, Err}
 import scodec.bits.{BitVector, hex}
+import scodec.{Attempt, DecodeResult, Err}
 import zio.*
 import zio.test.*
 

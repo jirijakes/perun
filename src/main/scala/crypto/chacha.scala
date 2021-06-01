@@ -17,8 +17,10 @@ def encryptPad(
 ): ByteVector =
   encrypt(
     key,
-    ByteVector.view(Array.fill[Byte](4)(0) ++
-      nonce.toByteArray.reverse.padTo[Byte](8, 0)),
+    ByteVector.view(
+      Array.fill[Byte](4)(0) ++
+        nonce.toByteArray.reverse.padTo[Byte](8, 0)
+    ),
     ad,
     plaintext
   )
@@ -46,8 +48,10 @@ def decryptPad(
 ): Either[DecryptionError, ByteVector] =
   decrypt(
     key,
-    ByteVector.view(Array.fill[Byte](4)(0) ++
-      nonce.toByteArray.reverse.padTo[Byte](8, 0)),
+    ByteVector.view(
+      Array.fill[Byte](4)(0) ++
+        nonce.toByteArray.reverse.padTo[Byte](8, 0)
+    ),
     ad,
     ciphertext
   )

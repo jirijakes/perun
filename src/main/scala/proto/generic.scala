@@ -1,14 +1,15 @@
 package perun.proto.generic
 
+import scala.compiletime.*
+import scala.deriving.*
+
 import scodec.Codec
 import scodec.bits.ByteVector
 import scodec.codecs.*
+
 import perun.proto.blockchain.*
 import perun.proto.codecs.*
 import perun.proto.features.*
-
-import scala.deriving.*
-import scala.compiletime.*
 
 /** Type class indicating which codecs can be automatically
   * derived using [[proto]]. This type class is meant to be

@@ -1,13 +1,13 @@
+import _root_.noise.*
+import lnz.handshake
 import scodec.bits.ByteVector
 import zio.*
 import zio.stream.*
+import zio.test.Assertion.*
 import zio.test.*
-import Assertion.*
 
-import lnz.handshake
-import perun.test.*
-import _root_.noise.*
 import perun.proto.codecs.*
+import perun.test.*
 
 object noise extends DefaultRunnableSpec:
 

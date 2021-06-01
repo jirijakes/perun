@@ -75,7 +75,8 @@ final case class ChannelAnnouncement(
     bitcoinKey1: NodeId,
     bitcoinKey2: NodeId,
     unknown: ByteVector
-)
+) //:
+//def witness: ByteVector = channelAnnouncement.encode(this).map(_.drop(2048))
 
 val channelAnnouncement: Codec[ChannelAnnouncement] =
   validated[ChannelAnnouncement](

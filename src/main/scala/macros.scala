@@ -1,12 +1,10 @@
 package macros
 
-
 object Bitfield:
 
-  class Bitfield[A](n: List[String]) {
+  class Bitfield[A](n: List[String]):
     override def toString = n.mkString(" • ")
-  }
-
+/*
   import scala.quoted.*
 
   case class Flax(isRed: Boolean, isDotted: Boolean)
@@ -33,3 +31,4 @@ object Bitfield:
 
 
     '{new Bitfield[A](${names}.toList)}
+ */

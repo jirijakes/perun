@@ -2,9 +2,8 @@ package perun.db.store
 
 import zio.*
 import zio.stream.*
+import zio.test.Assertion.*
 import zio.test.*
-
-import Assertion.*
 
 object StoreTest extends DefaultRunnableSpec:
 
@@ -19,7 +18,7 @@ object StoreTest extends DefaultRunnableSpec:
               execute("INSERT INTO tbl (id) VALUES ((1), (3))") *>
               execute("INSERT INTO tbl (id) VALUES (2)")
           ) *>
-        query("SELECT * FROM tbl ORDER BY id", _.getInt(1))
+          query("SELECT * FROM tbl ORDER BY id", _.getInt(1))
 
       val y = x.runCollect
         .provideCustomLayer(live("jdbc:hsqldb:mem:inmem"))

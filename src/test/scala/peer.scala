@@ -1,12 +1,12 @@
 package perun.peer
 
+import noise.*
 import scodec.bits.ByteVector
 import zio.*
 import zio.stream.*
+import zio.test.Assertion.*
 import zio.test.*
-import Assertion.*
 
-import noise.*
 import perun.test.*
 
 object peer extends DefaultRunnableSpec:

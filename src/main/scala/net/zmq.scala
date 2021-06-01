@@ -2,10 +2,10 @@ package perun.net.zmq
 
 import org.zeromq.*
 import scodec.bits.ByteVector
-import zio.{blocking as _, *}
 import zio.blocking.*
 import zio.console.*
 import zio.stream.*
+import zio.{blocking as _, *}
 
 enum Message:
   case TxHash(hash: ByteVector)

@@ -1,8 +1,8 @@
 import scodec.bits.*
+import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio.*
 import zio.console.*
 import zio.stream.*
-import sttp.client3.httpclient.zio.HttpClientZioBackend
 
 object lnz extends App:
 

@@ -1,7 +1,7 @@
 package perun.net.rpc
 
-import io.circe.{Decoder, Encoder, Json}
 import io.circe.syntax.*
+import io.circe.{Decoder, Encoder, Json}
 import sttp.client3.*
 import sttp.client3.circe.*
 import sttp.client3.httpclient.zio.*
@@ -74,8 +74,14 @@ def bitcoind(
 
     }
 
-def txout(block: Int, tx: Int, out: Int): ZIO[Has[Rpc], Throwable, Option[TxOut]] =
+def txout(
+    block: Int,
+    tx: Int,
+    out: Int
+): ZIO[Has[Rpc], Throwable, Option[TxOut]] =
   ZIO.accessM(_.get.txout(block, tx, out))
 
-def txout(shortChannelId: ShortChannelId): ZIO[Has[Rpc], Throwable, Option[TxOut]] =
+def txout(
+    shortChannelId: ShortChannelId
+): ZIO[Has[Rpc], Throwable, Option[TxOut]] =
   txout(shortChannelId.block, shortChannelId.transaction, shortChannelId.output)

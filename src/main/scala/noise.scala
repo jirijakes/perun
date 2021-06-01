@@ -9,10 +9,10 @@ import org.bouncycastle.crypto.params.KeyParameter
 import scodec.bits.ByteVector
 import zio.*
 
-import perun.proto.codecs.*
 import perun.crypto.keygen.*
 import perun.crypto.secp256k1.*
 import perun.crypto.{DecryptionError, chacha}
+import perun.proto.codecs.*
 
 /*
 XK:

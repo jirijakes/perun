@@ -1,3 +1,4 @@
+import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio.*
 import zio.console.*
 import zio.stream.*
@@ -8,7 +9,6 @@ import perun.db.p2p.*
 import perun.db.tinkerpop
 import perun.net.rpc.*
 import perun.net.zmq.*
-import sttp.client3.httpclient.zio.HttpClientZioBackend
 
 object pokus extends App:
 
@@ -27,15 +27,15 @@ object pokus extends App:
   //   println(">>> " + CryptoUtil.sha256(z.asmBytes))
 
   object A:
-      class Service
+    class Service
   object B:
-      class Service
+    class Service
   object C:
-      class Service
+    class Service
   object D:
-      class Service
+    class Service
   object E:
-      class Service
+    class Service
 
   val a = ZLayer.succeed(new A.Service)
   val b = ZLayer.succeed(new B.Service)
@@ -51,12 +51,15 @@ object pokus extends App:
 
   val prg: ZIO[A & B & C & D & E, Nothing, Unit] = ZIO.unit
 
+  val program: ZIO[Has[
+    P2P
+  ] & Has[Keygen] & Has[Secp256k1] & Has[Zmq] & Has[Rpc], Throwable, Unit] =
+    ZIO.unit
+  // txout(1000, 0, 0).flatMap(x => putStrLn(x.toString)) *>
+  // subscribeZmq.mapM(x => putStrLn(x.toString)).runDrain
 
-  val program: ZIO[Has[P2P] & Has[Keygen] & Has[Secp256k1] & Has[Zmq] & Has[Rpc], Throwable, Unit] = ZIO.unit
-    // txout(1000, 0, 0).flatMap(x => putStrLn(x.toString)) *>
-      // subscribeZmq.mapM(x => putStrLn(x.toString)).runDrain
-
-  def run(args: List[String]) = prg.provideCustomLayer(a ++ b ++ c ++ d ++ e).exitCode
+  def run(args: List[String]) =
+    prg.provideCustomLayer(a ++ b ++ c ++ d ++ e).exitCode
 
   def run2(args: List[String]) =
     program

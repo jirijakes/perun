@@ -68,7 +68,7 @@ def validateSignatures(b: ByteVector): ValidateM[Has[Secp256k1]] =
   // <<Channel announcement signatures>>
   case m: Message.ChannelAnnouncement => valid(b, m)
   // <<Node announcement signatures>>
-  case m: Message.NodeAnnouncement    => valid(b, m)
+  case m: Message.NodeAnnouncement => valid(b, m)
 
 /** Perform validation of transaction outputs according to messages'
   * specifications.
@@ -90,7 +90,8 @@ def validateTxOutput: Validate =
     // TODO: can this be done more elegantly?
     if spk == "0020" + sha256(multisig.asmBytes).hex then Right(m)
     else Left(Invalid.TxOutputNotUnspent)
-  case Message.ChannelAnnouncement(_, None, _) => Left(Invalid.TxOutputNotUnspent)
+  case Message.ChannelAnnouncement(_, None, _) =>
+    Left(Invalid.TxOutputNotUnspent)
 
 def validateChain(conf: perun.peer.Configuration): Validate =
   // <<Channel announcement chain hash>>

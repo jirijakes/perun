@@ -1,7 +1,8 @@
 package perun.crypto
 
-import scodec.bits.ByteVector
 import scala.annotation.targetName
+
+import scodec.bits.ByteVector
 
 enum DecryptionError:
   case BadTag

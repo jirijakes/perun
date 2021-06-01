@@ -43,11 +43,12 @@ object sinking extends App:
                 putStrLn(s"Sending: $x") *> Stream(x + '\n')
                   .mapConcat(_.getBytes)
                   .run(c.write)
-              ).fork
+              )
+              .fork
             f2 <- ZStream
               .fromHub(hr)
               .foreach(i => putStrLn(s"Received: $i") *> hw.publish(i * 10))
-              // .fork
+            // .fork
             _ <- c.close()
           yield ()
         }

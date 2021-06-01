@@ -43,13 +43,13 @@ private class Signed[T](
         println(">>>>>>>>>>> " + t)
         val isValid = fs.iterator
           .map((sig, key) => true
-            // Secp256k1
-              // .get()
-              // .verify(
-                // sig(t).digitalSignature.bytes.toArray,
-                // witness.bytes.toArray,
-                // key(t).bytes.toArray
-              // )
+          // Secp256k1
+          // .get()
+          // .verify(
+          // sig(t).digitalSignature.bytes.toArray,
+          // witness.bytes.toArray,
+          // key(t).bytes.toArray
+          // )
           )
           .forall(_ == true)
         if isValid then s else Attempt.Failure(Err("NOT VALID"))

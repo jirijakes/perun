@@ -1,6 +1,6 @@
 package perun.proto.gossip
 
-import com.softwaremill.quicklens._
+import com.softwaremill.quicklens.*
 import scodec.*
 import scodec.bits.ByteVector
 import scodec.codecs.*

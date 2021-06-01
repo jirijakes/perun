@@ -1,18 +1,18 @@
 package perun.crypto.secp256k1
 
-import com.sun.jna.*
-import zio.*
-import scodec.bits.ByteVector
 import scala.annotation.targetName
 
-import perun.proto.codecs.*
-
+import com.sun.jna.*
 import org.bitcoins.crypto.{
-  ECDigitalSignature,
-  ECPublicKey,
   DoubleSha256Digest,
-  ECPrivateKey
+  ECDigitalSignature,
+  ECPrivateKey,
+  ECPublicKey
 }
+import scodec.bits.ByteVector
+import zio.*
+
+import perun.proto.codecs.*
 
 enum Error:
   case LibraryNotFound

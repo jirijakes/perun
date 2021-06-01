@@ -12,10 +12,12 @@ import zio.console.*
 import zio.duration.*
 import zio.stream.*
 
+import perun.crypto.secp256k1.Secp256k1
 import perun.db.p2p.*
 import perun.db.store.*
 import perun.net.rpc.*
 import perun.proto.blockchain.Chain
+import perun.proto.bolt.validate.*
 import perun.proto.features.Features
 import perun.proto.gossip.{
   GossipTimestampFilter,
@@ -24,8 +26,6 @@ import perun.proto.gossip.{
 }
 import perun.proto.init.Init
 import perun.proto.{Message, Response}
-import perun.crypto.secp256k1.Secp256k1
-import perun.proto.bolt.validate.*
 
 final case class State(
     gossipFilter: Option[GossipTimestampFilter]
@@ -69,7 +69,11 @@ def start(
           txout(c.shortChannelId)
             .zipPar(findChannel(c.shortChannelId))
             .map((out, chan) =>
-              (b, Message.ChannelAnnouncement(c, out.map(_.scriptPubKey.hex), chan))
+              (
+                b,
+                Message
+                  .ChannelAnnouncement(c, out.map(_.scriptPubKey.hex), chan)
+              )
             )
         case x => UIO(x)
       }

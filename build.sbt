@@ -2,13 +2,25 @@ name := "lnz"
 
 scalaVersion := "3.0.0"
 
+addCommandAlias("fmt", "all scalafmtSbt scalafmt Test/scalafmt")
+addCommandAlias("fix", "all Compile/scalafix Test/scalafix")
+addCommandAlias(
+  "fmtCheck",
+  "all scalafmtSbtCheck scalafmtCheck Test/scalafmtCheck"
+)
+addCommandAlias(
+  "fixCheck",
+  "; Compile/scalafix --check ; Test/scalafix --check "
+)
+addCommandAlias("prepare", "; fix; fmt")
+
 resolvers += Resolver.publishMavenLocal
 
 val zioVersion = "1.0.8" //+51-b1a3621b-SNAPSHOT"
 
 ThisBuild / scalafixDependencies ++= List(
   "com.github.liancheng" %% "organize-imports" % "0.5.0",
-  "com.github.vovapolu"  %% "scaluzzi"         % "0.1.18"
+  "com.github.vovapolu" %% "scaluzzi" % "0.1.18"
 )
 
 libraryDependencies ++= List(
@@ -24,8 +36,8 @@ libraryDependencies ++= List(
   // "dev.zio" % "zio-json" % "0.1.4",
   //"nl.vroste" %% "rezilience" % "0.6.0+29-1ae49682+20210511-0646-SNAPSHOT",
   // "org.bitcoin-s" % "bitcoin-s-core_2.13" % "0.6.0",
-  "org.bitcoin-s" % "bitcoin-s-core_2.13" % "0.6.0" excludeAll("org.scodec"),
-  "org.bitcoin-s" % "bitcoin-s-crypto_2.13" % "0.6.0" excludeAll("org.scodec"),
+  "org.bitcoin-s" % "bitcoin-s-core_2.13" % "0.6.0" excludeAll ("org.scodec"),
+  "org.bitcoin-s" % "bitcoin-s-crypto_2.13" % "0.6.0" excludeAll ("org.scodec"),
   // "org.bouncycastle" % "bcprov-jdk15on" % "1.68",
   // "fr.acinq.secp256k1" % "secp256k1-kmp-jvm" % "0.5.1",
   // "fr.acinq.secp256k1" % "secp256k1-kmp-jni-jvm" % "0.5.1",
@@ -56,6 +68,11 @@ Global / cancelable := false
 
 semanticdbEnabled := true
 
-scalacOptions ++= List("-explain", "-new-syntax", "-Xlint:unused", "-Wunused:imports")
+scalacOptions ++= List(
+  "-explain",
+  "-new-syntax",
+  "-Xlint:unused",
+  "-Wunused:imports"
+)
 
 scalaModuleInfo ~= (_.map(_.withOverrideScalaVersion(true)))

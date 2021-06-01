@@ -18,8 +18,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.*
 import zio.*
 
-import perun.p2p.*
 import perun.db.p2p.P2P
+import perun.p2p.*
 import perun.proto.codecs.*
 import perun.proto.gossip.{ChannelAnnouncement, NodeAnnouncement}
 

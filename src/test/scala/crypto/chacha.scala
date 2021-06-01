@@ -2,13 +2,13 @@
 
 package perun.crypto.chacha
 
-import io.circe.{parser, Decoder, Json}
+import io.circe.{Decoder, Json, parser}
 import scodec.bits.ByteVector
 import zio.*
-import zio.stream.*
-import zio.test.*
-import zio.test.Assertion.*
 import zio.blocking.*
+import zio.stream.*
+import zio.test.Assertion.*
+import zio.test.*
 
 object test extends DefaultRunnableSpec:
 
