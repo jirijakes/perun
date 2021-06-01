@@ -1,5 +1,3 @@
-// https://github.com/calvinmetcalf/chacha20poly1305/blob/master/test/fixtures.json
-
 package perun.crypto.chacha
 
 import io.circe.{Decoder, Json, parser}
@@ -10,7 +8,7 @@ import zio.stream.*
 import zio.test.Assertion.*
 import zio.test.*
 
-object test extends DefaultRunnableSpec:
+object test:
 
   given Decoder[ByteVector] = Decoder[String].map(s =>
     ByteVector.fromHex(s).getOrElse(ByteVector(s.getBytes))
@@ -28,6 +26,7 @@ object test extends DefaultRunnableSpec:
   given Decoder[Test] =
     Decoder.forProduct6("KEY", "NONCE", "IN", "AD", "CT", "TAG")(Test.apply)
 
+  // Thanks to https://github.com/calvinmetcalf/chacha20poly1305/blob/master/test/fixtures.json
   val vector: Gen[Blocking, Test] =
     Gen
       .fromEffect(
@@ -42,23 +41,21 @@ object test extends DefaultRunnableSpec:
       .flatMap(Gen.fromIterable(_))
 
   val spec =
-    suite("crypto")(
-      suite("chacha")(
-        suite("ChaCha20-Poly1305")(
-          testM("encrypt") {
-            checkAll(vector)(t =>
-              assert(encrypt(t.key, t.nonce, t.ad, t.plaintext))(
-                equalTo(t.ciphertext ++ t.tag)
-              )
+    suite("chacha")(
+      suite("ChaCha20-Poly1305")(
+        testM("encrypt") {
+          checkAll(vector)(t =>
+            assert(encrypt(t.key, t.nonce, t.ad, t.plaintext))(
+              equalTo(t.ciphertext ++ t.tag)
             )
-          },
-          testM("decrypt") {
-            checkAll(vector)(t =>
-              assert(decrypt(t.key, t.nonce, t.ad, t.ciphertext ++ t.tag))(
-                equalTo(Right(t.plaintext))
-              )
+          )
+        },
+        testM("decrypt") {
+          checkAll(vector)(t =>
+            assert(decrypt(t.key, t.nonce, t.ad, t.ciphertext ++ t.tag))(
+              equalTo(Right(t.plaintext))
             )
-          }
-        )
+          )
+        }
       )
     )

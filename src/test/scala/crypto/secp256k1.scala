@@ -12,7 +12,7 @@ import zio.test.*
 
 import perun.crypto.*
 
-object test extends DefaultRunnableSpec:
+object test:
 
   given Decoder[Signature] =
     Decoder[String].map(s => Signature.fromBytes(ByteVector.fromValidHex(s)))
@@ -29,6 +29,7 @@ object test extends DefaultRunnableSpec:
       signature: Signature
   ) derives Decoder
 
+      // Thanks to https://github.com/bitcoinjs/tiny-secp256k1
   val vector: Gen[Blocking, Test] =
     Gen
       .fromEffect(
@@ -42,21 +43,20 @@ object test extends DefaultRunnableSpec:
       )
       .flatMap(Gen.fromIterable(_))
 
+  // TODO: Is the JSON loaded and parsed twice? Can something be done about that?
   val spec =
-    suite("crypto")(
-      suite("secp256k1")(
-        testM("sign") {
-          checkM(vector)(t =>
-            assertM(signMessage(t.d, t.m))(equalTo(t.signature))
-              .provideCustomLayer(native)
-          )
-        },
-        testM("verify") {
-          checkM(vector)(t =>
-            assertM(
-              verifySignature(t.signature, t.m, t.d.publicKey)
-            )(isTrue).provideCustomLayer(native)
-          )
-        }
-      )
+    suite("secp256k1")(
+      testM("sign") {
+        checkM(vector)(t =>
+          assertM(signMessage(t.d, t.m))(equalTo(t.signature))
+            .provideCustomLayer(native)
+        )
+      },
+      testM("verify") {
+        checkM(vector)(t =>
+          assertM(
+            verifySignature(t.signature, t.m, t.d.publicKey)
+          )(isTrue).provideCustomLayer(native)
+        )
+      }
     )

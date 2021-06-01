@@ -46,19 +46,18 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
           )
         )
           .refineOrDie { case x => Error.CouldNotInitialize }
-        cb = new lib.OnError:
-          def invoke(message: String, data: Pointer) =
-            println(">>>>>>>> " + message)
-        _ <- Task(
-          lib.secp256k1_context_set_illegal_callback(ctx, cb, Pointer.NULL)
-        ).orDie
-      yield (ctx, lib, cb)
-    )((ctx, lib, _) => Task(lib.secp256k1_context_destroy(ctx)).ignore)
-    .map { (ctx, lib, cb) =>
+      // cb = new lib.OnError:
+      // def invoke(message: String, data: Pointer) =
+      // println(">>>>>>>> " + message)
+      // _ <- Task(
+      // lib.secp256k1_context_set_illegal_callback(ctx, cb, Pointer.NULL)
+      // ).orDie
+      yield (ctx, lib)
+    )((ctx, lib) => Task(lib.secp256k1_context_destroy(ctx)).ignore)
+    .map { (ctx, lib) =>
       new Secp256k1:
-        val x = cb
         def ecdh(sec: PrivateKey, pub: PublicKey): ByteVector =
-          val key = unsafe.Pubkey.empty
+          val key = unsafe.Pubkey.allocate
           val keyr = lib.secp256k1_ec_pubkey_parse(
             ctx,
             key,
@@ -76,7 +75,7 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
           )
           ByteVector.view(out)
         def sign(sec: PrivateKey, h: Sha256Digest): Signature =
-          val sig = unsafe.Signature.empty
+          val sig = unsafe.Signature.allocate
           val resr = lib.secp256k1_ecdsa_sign(
             ctx,
             sig,
@@ -94,13 +93,13 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
             h: Sha256Digest,
             k: NodeId | PublicKey
         ): Boolean =
-          val sig = unsafe.Signature.empty
+          val sig = unsafe.Signature.allocate
           val sigr = lib.secp256k1_ecdsa_signature_parse_compact(
             ctx,
             sig,
             s.signatureToBytes.toArray
           )
-          val key = unsafe.Pubkey.empty
+          val key = unsafe.Pubkey.allocate
           val keyr = lib.secp256k1_ec_pubkey_parse(
             ctx,
             key,
@@ -124,70 +123,26 @@ object unsafe:
   opaque type Signature = Array[Byte]
   opaque type Pubkey = Array[Byte]
 
-  extension (p: Pubkey)
-    @targetName("pubkeyToByteVector")
-    def toByteVector: ByteVector = ByteVector.view(p)
-
   object Pubkey:
-    def empty: Pubkey = Array.ofDim[Byte](64)
-
-  extension (p: Signature)
-    @targetName("signatureToByteVector")
-    def toByteVector: ByteVector = ByteVector.view(p)
+    def allocate: Pubkey = Array.ofDim[Byte](64)
 
   object Signature:
-    def empty: Signature = Array.ofDim[Byte](64)
+    def allocate: Signature = Array.ofDim[Byte](64)
 
   val flagVerify = (1 << 0) | (1 << 8)
   val flagSign = (1 << 0) | (1 << 9)
 
+  // format: off
   trait Secp256k1 extends Library:
     def secp256k1_context_create(i: Int): Context
     def secp256k1_context_destroy(c: Context): Unit
-    def secp256k1_ecdsa_signature_parse_compact(
-        c: Context,
-        s: Signature,
-        in: Array[Byte]
-    ): Int
-    def secp256k1_ecdsa_signature_serialize_compact(
-        c: Context,
-        s: Array[Byte],
-        in: Signature
-    ): Int
-    def secp256k1_ec_pubkey_parse(
-        c: Context,
-        k: Pubkey,
-        in: Array[Byte],
-        size: Int
-    ): Int
-    def secp256k1_ecdh(
-        c: Context,
-        out: Array[Byte],
-        pub: Pubkey,
-        sec: Array[Byte],
-        hash: Pointer,
-        data: Pointer
-    ): Int
-    def secp256k1_ecdsa_verify(
-        c: Context,
-        s: Signature,
-        h: Array[Byte],
-        k: Pubkey
-    ): Int
-    def secp256k1_ecdsa_sign(
-        c: Context,
-        s: Signature,
-        h: Array[Byte],
-        k: Array[Byte],
-        n: Pointer,
-        data: Pointer
-    ): Int
+    def secp256k1_context_set_illegal_callback(c: Context, f: OnError, p: Pointer): Unit
+    def secp256k1_ec_pubkey_parse(c: Context, k: Pubkey, in: Array[Byte], size: Int): Int
+    def secp256k1_ecdh(c: Context, out: Array[Byte], pub: Pubkey, sec: Array[Byte], hash: Pointer, data: Pointer): Int
+    def secp256k1_ecdsa_sign(c: Context, s: Signature, h: Array[Byte], k: Array[Byte], n: Pointer, data: Pointer): Int
+    def secp256k1_ecdsa_signature_parse_compact(c: Context, s: Signature, in: Array[Byte]): Int
+    def secp256k1_ecdsa_signature_serialize_compact(c: Context, s: Array[Byte], in: Signature): Int
+    def secp256k1_ecdsa_verify(c: Context, s: Signature, h: Array[Byte], k: Pubkey): Int
 
     trait OnError extends Callback:
       def invoke(message: String, data: Pointer): Unit
-
-    def secp256k1_context_set_illegal_callback(
-        c: Context,
-        f: OnError,
-        p: Pointer
-    ): Unit
