@@ -3,11 +3,12 @@ package perun.proto.gossip
 import java.time.LocalDate
 
 import com.softwaremill.quicklens.*
+import org.bitcoins.crypto.CryptoUtil.sha256
 import org.typelevel.paiges.*
 import scodec.Codec
 import scodec.bits.ByteVector
 import scodec.codecs.*
-import zio.Cause.Then
+import zio.*
 
 import perun.crypto.*
 import perun.proto.blockchain.*
@@ -15,6 +16,7 @@ import perun.proto.codecs.*
 import perun.proto.features.*
 import perun.proto.uint64.*
 import perun.proto.validate.*
+import perun.crypto.secp256k1.*
 
 final case class NodeAnnouncement(
     signature: Signature,
@@ -42,8 +44,6 @@ val nodeAnnouncement: Codec[NodeAnnouncement] =
         ("unknown" | bytes)
     ).as[NodeAnnouncement]
   )(signed(64, _.signature, _.nodeId))
-
-// val xxx: Codec[NodeAnnouncement] = proto[NodeAnnouncement]
 
 object NodeAnnouncement:
   given Document[NodeAnnouncement] with
@@ -82,9 +82,18 @@ final case class ChannelAnnouncement(
     * secret key. Signing may fail, in that case `None` is returned.
     *
     * @param sec secret key used for signature
-    * @return `None` if signing failed, otherwise `Some` with signature
+    * @return `None` if signing failed, otherwise `Some`
     */
-  def signature(sec: PrivateKey): Option[Signature] = ???
+  def signature(sec: PrivateKey): URIO[Has[Secp256k1], Option[Signature]] =
+    UIO(
+      nonvalidatingChannelAnnouncement
+        .encode(this)
+        .toOption
+        .map(_.drop(2048).toByteVector)
+    ).flatMap {
+      case None      => UIO(None)
+      case Some(msg) => signMessage(sec, sha256(msg)).map(Option(_))
+    }
 
   /** Inject all signatures into this channel announcement. The
     * signatures are not verified during this step.

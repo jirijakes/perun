@@ -42,7 +42,7 @@ object test extends DefaultRunnableSpec:
       .flatMap(Gen.fromIterable(_))
 
   val spec =
-    suite("crypt")(
+    suite("crypto")(
       suite("chacha")(
         suite("ChaCha20-Poly1305")(
           testM("encrypt") {

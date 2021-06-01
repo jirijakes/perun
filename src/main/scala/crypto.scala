@@ -11,10 +11,19 @@ import zio.UIO
 enum DecryptionError:
   case BadTag
 
+/** Representation of elliptic curve secret key. In the context
+  * of Lightning Network, it is always on Secp256k1 curve.
+  */
 opaque type PrivateKey = ECPrivateKey
 
+/** Representation of elliptic curve public key. In the context
+  * of Lightning Network, it is always on Secp256k1 curve.
+  */
 opaque type PublicKey = ECPublicKey
 
+/** Representation of elliptic curve digital signature. In the context
+  * of Lightning Network, it is always on Secp256k1 curve.
+  */
 opaque type Signature = ECDigitalSignature
 
 extension (sec: PrivateKey)
@@ -46,5 +55,7 @@ object PublicKey:
 // extension (s: Signature) def digitalSignature: ECDigitalSignature = s
 
 object Signature:
+  def fromBytes(b: ByteVector): Signature = ECDigitalSignature.fromBytes(b)
+  val dummy: Signature = ECDigitalSignature(ByteVector.fill[Byte](64)(0))
   val codec: Codec[Signature] =
     bytes(64).xmap(ECDigitalSignature.fromBytes, _.bytes)

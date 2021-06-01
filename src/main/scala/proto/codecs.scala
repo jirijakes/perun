@@ -59,7 +59,7 @@ extension (id: NodeId)
   def hex: String = ??? // id.hex
 
 object NodeId:
-  def fromPublickKey(pub: PublicKey): NodeId = pub
+  def fromPublicKey(pub: PublicKey): NodeId = pub
 
 val nodeId: Codec[NodeId] = perun.crypto.PublicKey.codec
 
