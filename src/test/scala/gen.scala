@@ -1,5 +1,6 @@
 package perun.test.gen
 
+import scodec.bits.ByteVector
 import zio.*
 import zio.random.*
 import zio.test.*
@@ -9,7 +10,6 @@ import perun.crypto.keygen.*
 import perun.proto.blockchain.Chain
 import perun.proto.codecs.*
 import perun.proto.gossip.ChannelAnnouncement
-import scodec.bits.ByteVector
 
 val anyChain: Gen[Random, Chain] =
   Gen.elements(Chain.Testnet, Chain.Mainnet, Chain.Signet)

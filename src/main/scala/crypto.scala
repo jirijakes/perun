@@ -27,7 +27,7 @@ opaque type PublicKey = ECPublicKey
 opaque type Signature = ECDigitalSignature
 
 extension (sec: PrivateKey)
-  def toBytes: ByteVector = sec.bytes
+  def secretKeyToBytes: ByteVector = sec.bytes
   def publicKey: perun.crypto.PublicKey = sec.publicKey
 
 object PrivateKey:
@@ -37,7 +37,7 @@ object PrivateKey:
 
 extension (pub: PublicKey)
   def asECPublicKey: ECPublicKey = pub
-  def toBytes: ByteVector = pub.bytes
+  def publicKeyToBytes: ByteVector = pub.bytes
   def byteSize: Long = pub.byteSize
 
 object PublicKey:

@@ -1,14 +1,14 @@
 package perun.proto.gossip
 
-import zio.test.*
-import zio.test.Assertion.*
-
-import perun.crypto.secp256k1.native
-import perun.proto.features.*
-import perun.crypto.*
 import scodec.bits.ByteVector
+import zio.test.Assertion.*
+import zio.test.*
+
+import perun.crypto.*
+import perun.crypto.secp256k1.native
 import perun.proto.blockchain.Chain
 import perun.proto.codecs.{NodeId, ShortChannelId}
+import perun.proto.features.*
 
 object NodeTest extends DefaultRunnableSpec:
 
@@ -30,8 +30,8 @@ object NodeTest extends DefaultRunnableSpec:
           ByteVector.empty
         )
 
-        an.signature(sec).map {
-          case Some(sig) => an.signed(sig, sig, sig, sig)
+        an.signature(sec).map { case Some(sig) =>
+          an.signed(sig, sig, sig, sig)
         }
       }
       .map { x =>

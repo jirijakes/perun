@@ -1,17 +1,16 @@
 package perun.crypto.secp256k1
 
+import io.circe.{Decoder, Json, parser}
+import org.bitcoins.crypto.CryptoUtil.sha256
+import org.bitcoins.crypto.Sha256Digest
+import scodec.bits.ByteVector
 import zio.*
 import zio.blocking.*
 import zio.stream.*
-import zio.test.*
 import zio.test.Assertion.*
-
-import io.circe.{Decoder, Json, parser}
-import scodec.bits.ByteVector
-import org.bitcoins.crypto.CryptoUtil.sha256
+import zio.test.*
 
 import perun.crypto.*
-import org.bitcoins.crypto.Sha256Digest
 
 object test extends DefaultRunnableSpec:
 
@@ -54,9 +53,9 @@ object test extends DefaultRunnableSpec:
         },
         testM("verify") {
           checkM(vector)(t =>
-            assertM(verifySignature(t.signature, ???, t.d.publicKey))(
-              equalTo(true)
-            ).provideCustomLayer(native)
+            assertM(
+              verifySignature(t.signature, t.m, t.d.publicKey)
+            )(isTrue).provideCustomLayer(native)
           )
         }
       )

@@ -11,12 +11,12 @@ import scodec.codecs.*
 import zio.*
 
 import perun.crypto.*
+import perun.crypto.secp256k1.*
 import perun.proto.blockchain.*
 import perun.proto.codecs.*
 import perun.proto.features.*
 import perun.proto.uint64.*
 import perun.proto.validate.*
-import perun.crypto.secp256k1.*
 
 final case class NodeAnnouncement(
     signature: Signature,

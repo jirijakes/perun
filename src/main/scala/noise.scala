@@ -255,7 +255,9 @@ final class HandshakeState(
               case (s, S) =>
                 s.map { (st, buf) =>
                   val (ciphertext, nextHs) =
-                    st.encryptAndHash(st.s.publicKey.asECPublicKey.compressed.bytes)
+                    st.encryptAndHash(
+                      st.s.publicKey.asECPublicKey.compressed.bytes
+                    )
                   (nextHs, buf ++ ciphertext)
                 }
               case (s, SE) =>

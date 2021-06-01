@@ -8,7 +8,7 @@ import scodec.bits.ByteVector
 import zio.*
 
 import perun.crypto.*
-import perun.proto.codecs.NodeId
+import perun.proto.codecs.*
 
 enum Error:
   case LibraryNotFound
@@ -62,7 +62,7 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
           val keyr = lib.secp256k1_ec_pubkey_parse(
             ctx,
             key,
-            pub.toBytes.toArray,
+            pub.publicKeyToBytes.toArray,
             pub.byteSize.toInt
           )
           val out = Array.ofDim[Byte](32)
@@ -70,7 +70,7 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
             ctx,
             out,
             key,
-            sec.toBytes.toArray,
+            sec.secretKeyToBytes.toArray,
             Pointer.NULL,
             Pointer.NULL
           )
@@ -81,12 +81,13 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
             ctx,
             sig,
             h.bytes.toArray,
-            sec.toBytes.toArray,
+            sec.secretKeyToBytes.toArray,
             Pointer.NULL,
             Pointer.NULL
           )
           val out = Array.ofDim[Byte](64)
-          val com = lib.secp256k1_ecdsa_signature_serialize_compact(ctx, out, sig)
+          val com =
+            lib.secp256k1_ecdsa_signature_serialize_compact(ctx, out, sig)
           Signature.fromBytes(ByteVector.view(out))
         def verify(
             s: Signature,
@@ -97,14 +98,21 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
           val sigr = lib.secp256k1_ecdsa_signature_parse_compact(
             ctx,
             sig,
-            ??? // s.bytes.toArray
+            k match
+              // case n: NodeId    => n.nodeIdAsPublicKey.bytes.toArray
+              case p: PublicKey => p.bytes.toArray
           )
           val key = unsafe.Pubkey.empty
           val keyr = lib.secp256k1_ec_pubkey_parse(
             ctx,
             key,
-            ???, //k.bytes.toArray,
-            ??? //k.byteSize.toInt
+            k match
+              // case n: NodeId    => n.nodeIdAsPublicKey.bytes.toArray
+              case p: PublicKey => p.bytes.toArray
+            ,
+            k match
+              // case n: NodeId    => n.nodeIdAsPublicKey.byteSize.toInt
+              case p: PublicKey => p.byteSize.toInt
           )
           val verr = lib.secp256k1_ecdsa_verify(ctx, sig, h.bytes.toArray, key)
           verr == 1
@@ -146,7 +154,7 @@ object unsafe:
     def secp256k1_ecdsa_signature_serialize_compact(
         c: Context,
         s: Array[Byte],
-        in: Signature,
+        in: Signature
     ): Int
     def secp256k1_ec_pubkey_parse(
         c: Context,
