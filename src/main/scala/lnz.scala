@@ -6,15 +6,15 @@ import zio.stream.*
 
 object lnz extends App:
 
-  val ls1 = perun.proto.codecs.PrivateKey.fromHex(
+  val ls1 = perun.crypto.PrivateKey.fromHex(
     "1111111111111111111111111111111111111111111111111111111111111111"
   )
 
-  val ls2 = perun.proto.codecs.PrivateKey.fromHex(
+  val ls2 = perun.crypto.PrivateKey.fromHex(
     "2121212121212121212121212121212121212121212121212121212121212121"
   )
 
-  val rs = perun.proto.codecs.PublicKey.fromHex(
+  val rs = perun.crypto.PublicKey.fromHex(
     "028d7500dd4c12685d1f568b4c2b5048e8534b873319f3a8daa612b469132ec7f7"
   )
 

@@ -4,6 +4,7 @@ import zio.*
 import zio.random.*
 import zio.test.*
 
+import perun.crypto.*
 import perun.crypto.keygen.*
 import perun.proto.blockchain.Chain
 import perun.proto.codecs.*

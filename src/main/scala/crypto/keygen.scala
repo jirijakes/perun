@@ -3,7 +3,7 @@ package perun.crypto.keygen
 import zio.*
 import zio.prelude.NonEmptyList
 
-import perun.proto.codecs.PrivateKey
+import perun.crypto.PrivateKey
 
 trait Keygen:
   def generateKeypair: UIO[PrivateKey]

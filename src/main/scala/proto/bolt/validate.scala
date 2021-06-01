@@ -6,9 +6,10 @@ import scodec.bits.ByteVector
 import zio.*
 import zio.stream.*
 
+import perun.crypto.*
 import perun.crypto.secp256k1.*
 import perun.proto.*
-import perun.proto.codecs.*
+import perun.proto.codecs.nodeIdAsPublicKey
 
 enum Invalid:
   case Signature(m: Message)
@@ -27,24 +28,24 @@ def valid(
     .collectAll(
       NonEmptyChunk(
         verifySignature(
-          c.m.nodeSignature1.digitalSignature,
+          c.m.nodeSignature1,
           hash,
-          c.m.nodeId1.publicKey
+          c.m.nodeId1
         ),
         verifySignature(
-          c.m.nodeSignature2.digitalSignature,
+          c.m.nodeSignature2,
           hash,
-          c.m.nodeId2.publicKey
+          c.m.nodeId2
         ),
         verifySignature(
-          c.m.bitcoinSignature1.digitalSignature,
+          c.m.bitcoinSignature1,
           hash,
-          c.m.bitcoinKey1.publicKey
+          c.m.bitcoinKey1
         ),
         verifySignature(
-          c.m.bitcoinSignature2.digitalSignature,
+          c.m.bitcoinSignature2,
           hash,
-          c.m.bitcoinKey2.publicKey
+          c.m.bitcoinKey2
         )
       )
     )
@@ -58,9 +59,9 @@ def valid(
     c: Message.NodeAnnouncement
 ): ZIO[Has[Secp256k1], Invalid, Message] =
   verifySignature(
-    c.m.signature.digitalSignature,
+    c.m.signature,
     doubleSHA256(b.drop(2 + 64)),
-    c.m.nodeId.publicKey
+    c.m.nodeId
   )
     .flatMap(v => if v then ZIO.succeed(c) else ZIO.fail(Invalid.Signature(c)))
 
@@ -85,7 +86,10 @@ def validateTxOutput: Validate =
   case m @ Message.ChannelAnnouncement(c, Some(spk), _) =>
     val multisig = MultiSignatureScriptPubKey(
       2,
-      List(c.bitcoinKey1.publicKey, c.bitcoinKey2.publicKey).sortBy(_.hex)
+      List(
+        c.bitcoinKey1.nodeIdAsPublicKey.asECPublicKey,
+        c.bitcoinKey2.nodeIdAsPublicKey.asECPublicKey
+      ).sortBy(_.hex)
     )
     // TODO: can this be done more elegantly?
     if spk == "0020" + sha256(multisig.asmBytes).hex then Right(m)

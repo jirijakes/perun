@@ -2,39 +2,49 @@ package perun.crypto
 
 import scala.annotation.targetName
 
+import org.bitcoins.crypto.{ECDigitalSignature, ECPrivateKey, ECPublicKey}
 import scodec.bits.ByteVector
+import scodec.codecs.bytes
+import scodec.{Attempt, Codec, Err}
+import zio.UIO
 
 enum DecryptionError:
   case BadTag
 
-opaque type PublicKey = ByteVector
-opaque type PrivateKey = (ByteVector, PublicKey)
-opaque type Signature = ByteVector
-opaque type DoubleSHA256 = ByteVector
+opaque type PrivateKey = ECPrivateKey
 
-object PublicKey:
-  def fromBytes(b: ByteVector): PublicKey = b
+opaque type PublicKey = ECPublicKey
+
+opaque type Signature = ECDigitalSignature
+
+extension (sec: PrivateKey)
+  def toBytes: ByteVector = sec.bytes
+  def publicKey: PublicKey = sec.publicKey
 
 object PrivateKey:
-  def fromHex(h: String): PrivateKey = ??? //ByteVector.fromValidHex(h)
+  def freshPrivateKey: UIO[PrivateKey] =
+    UIO.effectTotal(ECPrivateKey.freshPrivateKey)
+  def fromHex(hex: String): PrivateKey = ECPrivateKey.fromHex(hex)
 
-extension (k: PublicKey)
-  @targetName("publicKeyToArray")
-  def toArray: Array[Byte] = k.toArray
-  @targetName("publicKeyLength")
-  def length: Int = k.length.toInt
-  @targetName("publicKeyToBytes")
-  def bytes: ByteVector = k
+extension (pub: PublicKey)
+  def asECPublicKey: ECPublicKey = pub
+  def toBytes: ByteVector = pub.bytes
+  def byteSize: Long = pub.byteSize
 
-extension (k: PrivateKey)
-  @targetName("privateKeyToArray")
-  def toArray: Array[Byte] = k._1.toArray
-  def publicKey: PublicKey = k._2
+object PublicKey:
+  def fromBytes(bytes: ByteVector): PublicKey = ECPublicKey.fromBytes(bytes)
+  def fromHex(hex: String): PublicKey = ECPublicKey.fromHex(hex)
+  val codec: Codec[PublicKey] = bytes(33).exmap(
+    b =>
+      ECPublicKey
+        .fromBytesOpt(b)
+        .fold(Attempt.Failure(Err("Invalid public key")))(Attempt.successful),
+    k => Attempt.successful(k.bytes)
+  )
+  given noise.Binary[PublicKey] = _.compressed.bytes
 
-extension (s: Signature)
-  @targetName("signatureToArray")
-  def toArray: Array[Byte] = s.toArray
+// extension (s: Signature) def digitalSignature: ECDigitalSignature = s
 
-extension (d: DoubleSHA256)
-  @targetName("doubleSHA256ToArray")
-  def toArray: Array[Byte] = d.toArray
+object Signature:
+  val codec: Codec[Signature] =
+    bytes(64).xmap(ECDigitalSignature.fromBytes, _.bytes)

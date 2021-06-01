@@ -2,13 +2,18 @@ package perun.proto.codecs
 
 import java.net.{Inet4Address, Inet6Address, InetAddress}
 
+import scala.annotation.targetName
+
 import org.bitcoins.crypto.{ECDigitalSignature, ECPrivateKey, ECPublicKey}
 import scodec.*
 import scodec.bits.*
 import scodec.codecs.*
 import zio.UIO
 
+import perun.crypto.*
 import perun.proto.*
+
+export perun.crypto.Signature.codec as signature
 
 opaque type ChannelId = ByteVector
 
@@ -18,7 +23,9 @@ object ChannelId:
   def make(bytes: ByteVector): Either[String, ChannelId] =
     if bytes.length == 32 then Right(bytes) else Left("must be 32")
 
-extension (c: ChannelId) def toBytes: ByteVector = c
+extension (c: ChannelId)
+  @targetName("channelIdToBytes")
+  def toBytes: ByteVector = c
 
 val channelId: Codec[ChannelId] = bytes(32)
 
@@ -45,41 +52,16 @@ val error: Codec[Error] =
 //   def message: String = s"does not contain valid signature"
 //   def pushContext(ctx: String): Err = copy(context = ctx :: context)
 
-opaque type PrivateKey = ECPrivateKey
-
-extension (sec: PrivateKey)
-  def publicKey: PublicKey = sec.publicKey
-  def toBytes: ByteVector = sec.bytes
-
-object PrivateKey:
-  def freshPrivateKey: UIO[PrivateKey] =
-    UIO.effectTotal(ECPrivateKey.freshPrivateKey)
-  def fromHex(hex: String): PrivateKey = ECPrivateKey.fromHex(hex)
-
-opaque type PublicKey = ECPublicKey
-
-extension (pub: PublicKey)
-  def asNodeId: NodeId = pub
-  def toBytes: ByteVector = pub.bytes
-  def byteSize: Long = pub.byteSize
-
-object PublicKey:
-  def fromBytes(bytes: ByteVector): PublicKey = ECPublicKey.fromBytes(bytes)
-  def fromHex(hex: String): PublicKey = ECPublicKey.fromHex(hex)
-
 opaque type NodeId = PublicKey
 
 extension (id: NodeId)
-  def publicKey: ECPublicKey = id
-  def hex: String = id.hex
+  def nodeIdAsPublicKey: PublicKey = id
+  def hex: String = ??? // id.hex
 
-val nodeId: Codec[NodeId] = bytes(33).exmap(
-  b =>
-    ECPublicKey
-      .fromBytesOpt(b)
-      .fold(Attempt.Failure(Err("Invalid public key")))(Attempt.successful),
-  k => Attempt.successful(k.bytes)
-)
+object NodeId:
+  def fromPublickKey(pub: PublicKey): NodeId = pub
+
+val nodeId: Codec[NodeId] = perun.crypto.PublicKey.codec
 
 opaque type Alias = ByteVector
 
@@ -125,13 +107,6 @@ case class Color(r: Byte, g: Byte, b: Byte):
   override def toString(): String = f"#$r%02X$g%02X$b%02X"
 
 val color: Codec[Color] = (byte :: byte :: byte).as[Color]
-
-opaque type Signature = ECDigitalSignature
-
-extension (s: Signature) def digitalSignature: ECDigitalSignature = s
-
-val signature: Codec[Signature] =
-  bytes(64).xmap(ECDigitalSignature.fromBytes, _.bytes)
 
 case class ShortChannelId(block: Int, transaction: Int, output: Int):
   override def toString = s"${block}x${transaction}x${output}"

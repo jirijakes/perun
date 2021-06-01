@@ -1,6 +1,5 @@
 package noise
 
-// import fr.acinq.secp256k1.Secp256k1
 import org.bitcoins.crypto.CryptoUtil.sha256
 import org.bitcoins.crypto.*
 import org.bouncycastle.crypto.digests.SHA256Digest
@@ -9,9 +8,9 @@ import org.bouncycastle.crypto.params.KeyParameter
 import scodec.bits.ByteVector
 import zio.*
 
+import perun.crypto.*
 import perun.crypto.keygen.*
 import perun.crypto.secp256k1.*
-import perun.crypto.{DecryptionError, chacha}
 import perun.proto.codecs.*
 
 /*
@@ -32,8 +31,9 @@ object Binary:
   given Binary[ByteVector] = identity
   given Binary[String] = s => ByteVector.view(s.getBytes)
   given Binary[Array[Byte]] = ByteVector.view
+
+  // TODO: This should not be here but it seems it is needed because of opaque type
   given Binary[ECPublicKey] = _.compressed.bytes
-  given Binary[PublicKey] = _.publicKey.compressed.bytes
 
 enum HandshakeError:
   case InvalidCiphertext

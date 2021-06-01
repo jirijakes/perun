@@ -3,16 +3,12 @@ package perun.crypto.secp256k1
 import scala.annotation.targetName
 
 import com.sun.jna.*
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  ECDigitalSignature,
-  ECPrivateKey,
-  ECPublicKey
-}
+import org.bitcoins.crypto.DoubleSha256Digest
 import scodec.bits.ByteVector
 import zio.*
 
-import perun.proto.codecs.*
+import perun.crypto.*
+import perun.proto.codecs.NodeId
 
 enum Error:
   case LibraryNotFound
@@ -21,15 +17,15 @@ enum Error:
 trait Secp256k1:
   def ecdh(sec: PrivateKey, pub: PublicKey): ByteVector
   def verifySignature(
-      s: ECDigitalSignature,
+      s: Signature,
       h: DoubleSha256Digest,
-      k: ECPublicKey
+      k: NodeId | PublicKey
   ): Boolean
 
 def verifySignature(
-    s: ECDigitalSignature,
+    s: Signature,
     h: DoubleSha256Digest,
-    k: ECPublicKey
+    k: NodeId | PublicKey
 ): URIO[Has[Secp256k1], Boolean] = ZIO.access(_.get.verifySignature(s, h, k))
 
 def native: ZLayer[Any, Error, Has[Secp256k1]] =
@@ -74,22 +70,22 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
           )
           ByteVector.view(out)
         def verifySignature(
-            s: ECDigitalSignature,
+            s: Signature,
             h: DoubleSha256Digest,
-            k: ECPublicKey
+            k: NodeId | PublicKey
         ): Boolean =
           val sig = unsafe.Signature.empty
           val sigr = lib.secp256k1_ecdsa_signature_parse_compact(
             ctx,
             sig,
-            s.bytes.toArray
+            ??? // s.bytes.toArray
           )
           val key = unsafe.Pubkey.empty
           val keyr = lib.secp256k1_ec_pubkey_parse(
             ctx,
             key,
-            k.bytes.toArray,
-            k.byteSize.toInt
+            ???, //k.bytes.toArray,
+            ??? //k.byteSize.toInt
           )
           val verr = lib.secp256k1_ecdsa_verify(ctx, sig, h.bytes.toArray, key)
           verr == 1

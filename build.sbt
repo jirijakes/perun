@@ -69,10 +69,9 @@ Global / cancelable := false
 semanticdbEnabled := true
 
 scalacOptions ++= List(
-  "-explain",
+  // "-explain",
   "-new-syntax",
-  "-Xlint:unused",
-  "-Wunused:imports"
+  "-Ywarn-unused"
 )
 
 scalaModuleInfo ~= (_.map(_.withOverrideScalaVersion(true)))

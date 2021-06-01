@@ -1,6 +1,6 @@
 #+TITLE: TODO
 
-* Assorted [7/16]
+* Assorted [7/17]
 
   - [X] Make ~uint64~ represented by ~BigInt~, ~bigsize~ will remain ~Long~
   - [ ] Solve verification of signatures in gossip messages
@@ -25,3 +25,4 @@
     - https://github.com/zeromq/jeromq + https://github.com/zeromq/jeromq/blob/master/src/test/java/guide/clonecli1.java
   - [ ] Move HTTP client from STTP to zio-http when better
   - [ ] Bring refined
+  - [ ] Rename 'private key' to 'secret key'

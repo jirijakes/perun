@@ -6,7 +6,7 @@ import zio.stream.*
 import zio.test.Assertion.*
 import zio.test.*
 
-import perun.proto.codecs.*
+import perun.crypto.*
 import perun.test.*
 
 object noise extends DefaultRunnableSpec:

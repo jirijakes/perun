@@ -2,16 +2,17 @@ package perun.proto.gossip
 
 import java.time.LocalDate
 
-import org.hsqldb.index.NodeAVLDisk
+import com.softwaremill.quicklens.*
 import org.typelevel.paiges.*
 import scodec.Codec
 import scodec.bits.ByteVector
 import scodec.codecs.*
+import zio.Cause.Then
 
+import perun.crypto.*
 import perun.proto.blockchain.*
 import perun.proto.codecs.*
 import perun.proto.features.*
-import perun.proto.generic.proto
 import perun.proto.uint64.*
 import perun.proto.validate.*
 
@@ -40,7 +41,7 @@ val nodeAnnouncement: Codec[NodeAnnouncement] =
         )) ::
         ("unknown" | bytes)
     ).as[NodeAnnouncement]
-  )(signed(64, _.signature, _.nodeId.publicKey))
+  )(signed(64, _.signature, _.nodeId))
 
 // val xxx: Codec[NodeAnnouncement] = proto[NodeAnnouncement]
 
@@ -75,32 +76,62 @@ final case class ChannelAnnouncement(
     bitcoinKey1: NodeId,
     bitcoinKey2: NodeId,
     unknown: ByteVector
-) //:
-//def witness: ByteVector = channelAnnouncement.encode(this).map(_.drop(2048))
+):
+
+  /** Provide signature of this channel announcement using provided
+    * secret key. Signing may fail, in that case `None` is returned.
+    *
+    * @param sec secret key used for signature
+    * @return `None` if signing failed, otherwise `Some` with signature
+    */
+  def signature(sec: PrivateKey): Option[Signature] = ???
+
+  /** Inject all signatures into this channel announcement. The
+    * signatures are not verified during this step.
+    *
+    * @return channel announcement with all signatures replaced with arguments
+    */
+  def signed(
+      nodeSignature1: Signature,
+      nodeSignature2: Signature,
+      bitcoinSignature1: Signature,
+      bitcoinSignature2: Signature
+  ): ChannelAnnouncement =
+    this
+      .modify(_.nodeSignature1)
+      .setTo(nodeSignature1)
+      .modify(_.nodeSignature2)
+      .setTo(nodeSignature2)
+      .modify(_.bitcoinSignature1)
+      .setTo(bitcoinSignature1)
+      .modify(_.bitcoinSignature2)
+      .setTo(bitcoinSignature2)
+
+private[gossip] val nonvalidatingChannelAnnouncement
+    : Codec[ChannelAnnouncement] =
+  (
+    ("node_signature_1" | signature) ::
+      ("node_signature_2" | signature) ::
+      ("bitcoin_signature_1" | signature) ::
+      ("bitcoin_signature_2" | signature) ::
+      ("features" | features) ::
+      ("chain_hash" | chain) ::
+      ("short_channel_id" | shortChannelId) ::
+      ("node_id_1" | nodeId) ::
+      ("node_id_2" | nodeId) ::
+      ("bitcoin_key_1" | nodeId) ::
+      ("bitcoin_key_2" | nodeId) ::
+      ("unknown_bytes" | bytes)
+  ).as[ChannelAnnouncement]
 
 val channelAnnouncement: Codec[ChannelAnnouncement] =
-  validated[ChannelAnnouncement](
-    (
-      ("node_signature_1" | signature) ::
-        ("node_signature_2" | signature) ::
-        ("bitcoin_signature_1" | signature) ::
-        ("bitcoin_signature_2" | signature) ::
-        ("features" | features) ::
-        ("chain_hash" | chain) ::
-        ("short_channel_id" | shortChannelId) ::
-        ("node_id_1" | nodeId) ::
-        ("node_id_2" | nodeId) ::
-        ("bitcoin_key_1" | nodeId) ::
-        ("bitcoin_key_2" | nodeId) ::
-        ("unknown_bytes" | bytes)
-    ).as[ChannelAnnouncement]
-  )(
+  validated(nonvalidatingChannelAnnouncement)(
     signed(
       2048,
       _.nodeSignature1,
-      _.nodeId1.publicKey,
+      _.nodeId1,
       _.nodeSignature2,
-      _.nodeId2.publicKey
+      _.nodeId2
     )
   )
 

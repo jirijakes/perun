@@ -1,11 +1,11 @@
 package perun.proto.validate
 
 import org.bitcoins.crypto.CryptoUtil.doubleSHA256
-import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 import scodec.*
 import scodec.bits.BitVector
 
-import perun.proto.codecs.*
+import perun.crypto.*
+import perun.proto.codecs.NodeId
 import perun.proto.gossip.*
 
 def validated[T](codec: Codec[T])(v: Codec[T] => Codec[T]): Codec[T] = v(codec)
@@ -13,23 +13,23 @@ def validated[T](codec: Codec[T])(v: Codec[T] => Codec[T]): Codec[T] = v(codec)
 def signed[T](
     skipBits: Long,
     sig: T => Signature,
-    key: T => ECPublicKey
+    key: T => NodeId | PublicKey
 )(codec: Codec[T]): Codec[T] =
   new Signed[T](skipBits, codec, (sig, key))
 
 def signed[T](
     skipBits: Long,
     sig1: T => Signature,
-    key1: T => ECPublicKey,
+    key1: T => NodeId | PublicKey,
     sig2: T => Signature,
-    key2: T => ECPublicKey
+    key2: T => NodeId | PublicKey
 )(codec: Codec[T]): Codec[T] =
   new Signed[T](skipBits, codec, (sig1, key1), (sig2, key2))
 
 private class Signed[T](
     skipBits: Long,
     codec: Codec[T],
-    fs: (T => Signature, T => ECPublicKey)*
+    fs: (T => Signature, T => NodeId | PublicKey)*
 ) extends Codec[T]:
   def sizeBound: SizeBound = codec.sizeBound
   def encode(value: T): Attempt[BitVector] = codec.encode(value)
