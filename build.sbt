@@ -16,7 +16,7 @@ addCommandAlias("prepare", "; fix; fmt")
 
 resolvers += Resolver.publishMavenLocal
 
-val zioVersion = "1.0.8" //+51-b1a3621b-SNAPSHOT"
+val zioVersion = "1.0.9"
 
 ThisBuild / scalafixDependencies ++= List(
   "com.github.liancheng" %% "organize-imports" % "0.5.0",
@@ -41,7 +41,7 @@ libraryDependencies ++= List(
   // "org.bouncycastle" % "bcprov-jdk15on" % "1.68",
   // "fr.acinq.secp256k1" % "secp256k1-kmp-jvm" % "0.5.1",
   // "fr.acinq.secp256k1" % "secp256k1-kmp-jni-jvm" % "0.5.1",
-  "com.softwaremill.quicklens" %% "quicklens" % "1.7.3",
+  "com.softwaremill.quicklens" %% "quicklens" % "1.7.4",
   "org.scodec" %% "scodec-core" % "2.0.0",
   "org.scodec" %% "scodec-bits" % "1.1.27",
   "org.hsqldb" % "hsqldb" % "2.6.0",

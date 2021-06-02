@@ -9,7 +9,9 @@ import perun.crypto.*
 import perun.crypto.keygen.*
 import perun.proto.blockchain.Chain
 import perun.proto.codecs.*
+import perun.proto.features.*
 import perun.proto.gossip.ChannelAnnouncement
+import perun.crypto.secp256k1.Secp256k1
 
 val anyChain: Gen[Random, Chain] =
   Gen.elements(Chain.Testnet, Chain.Mainnet, Chain.Signet)
@@ -26,11 +28,12 @@ val validShortChannelId: Gen[Random, ShortChannelId] =
     ShortChannelId.apply
   )
 
-val validChannelAnnouncement: Gen[Has[Keygen] & Random, ChannelAnnouncement] =
+val validChannelAnnouncement
+    : Gen[Has[Keygen] & Has[Secp256k1] & Random, ChannelAnnouncement] =
   (validKeyPair <*> validKeyPair <*> validKeyPair <*> validKeyPair)
     .flatMap { case (((node1, node2), btc1), btc2) =>
-      for
-        sig <- dummySignature
+      val ca = for
+        sigdum <- dummySignature
         chain <- anyChain
         shortChannelId <- validShortChannelId
         nodeId1 = NodeId.fromPublicKey(node1.publicKey)
@@ -38,11 +41,11 @@ val validChannelAnnouncement: Gen[Has[Keygen] & Random, ChannelAnnouncement] =
         bitcoinKey1 = NodeId.fromPublicKey(btc1.publicKey)
         bitcoinKey2 = NodeId.fromPublicKey(btc2.publicKey)
       yield ChannelAnnouncement(
-        sig,
-        sig,
-        sig,
-        sig,
-        ???,
+        sigdum,
+        sigdum,
+        sigdum,
+        sigdum,
+        Features(ByteVector.fill[Byte](8)(0)),
         chain,
         shortChannelId,
         nodeId1,
@@ -50,5 +53,14 @@ val validChannelAnnouncement: Gen[Has[Keygen] & Random, ChannelAnnouncement] =
         bitcoinKey1,
         bitcoinKey2,
         ByteVector.empty
+      )
+
+      ca.mapM(a =>
+        for
+          sig1 <- a.signature(node1).orDieWith(_ => new Exception(""))
+          sig2 <- a.signature(node2).orDieWith(_ => new Exception(""))
+          sig3 <- a.signature(btc1).orDieWith(_ => new Exception(""))
+          sig4 <- a.signature(btc2).orDieWith(_ => new Exception(""))
+        yield a.signed(sig1, sig2, sig3, sig4)
       )
     }
