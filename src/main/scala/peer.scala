@@ -89,9 +89,9 @@ def start(
             case Message.Pong(_)              => UIO(Response.Ignore)
             case Message.ReplyChannelRange(_) => UIO(Response.Ignore)
             case Message.NodeAnnouncement(n) =>
-              offerNode(n).ignore.as(Response.Ignore)
+              offerNode(n).as(Response.Ignore)
             case Message.ChannelAnnouncement(c, _, _) =>
-              offerChannel(c).ignore.as(Response.Ignore)
+              offerChannel(c).as(Response.Ignore)
             case Message.ChannelUpdate(c)     => UIO(Response.Ignore)
             case Message.QueryChanellRange(q) => UIO(Response.Ignore)
           }

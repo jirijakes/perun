@@ -1,7 +1,7 @@
 package perun.proto.bolt.validate
 
 import org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey
-import org.bitcoins.crypto.CryptoUtil.sha256
+import org.bitcoins.crypto.CryptoUtil.{doubleSHA256, sha256}
 import scodec.bits.ByteVector
 import zio.*
 import zio.stream.*
@@ -23,7 +23,7 @@ def valid(
     b: ByteVector,
     c: Message.ChannelAnnouncement
 ): ZIO[Has[Secp256k1], Invalid, Message] =
-  val hash = sha256(b.drop(2 + 256))
+  val hash = doubleSHA256(b.drop(2 + 256))
   ZIO
     .collectAll(
       NonEmptyChunk(
@@ -60,7 +60,7 @@ def valid(
 ): ZIO[Has[Secp256k1], Invalid, Message] =
   verifySignature(
     c.m.signature,
-    sha256(b.drop(2 + 64)),
+    doubleSHA256(b.drop(2 + 64)),
     c.m.nodeId
   )
     .flatMap(v => if v then ZIO.succeed(c) else ZIO.fail(Invalid.Signature(c)))

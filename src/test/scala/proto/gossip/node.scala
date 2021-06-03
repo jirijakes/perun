@@ -4,6 +4,7 @@ import scodec.bits.ByteVector
 import zio.*
 import zio.test.Assertion.*
 import zio.test.*
+import zio.test.environment.*
 
 import perun.test.gen.*
 import perun.crypto.*
@@ -15,9 +16,7 @@ object NodeTest extends DefaultRunnableSpec:
   val spec =
     suite("aaa")(
       testM("sign") {
-        checkM(validChannelAnnouncement)(ca =>
-          assertM(ca.isValid.provideLayer(native))(isTrue)
-        )
-
+        checkM(validChannelAnnouncement)(ca => assertM(UIO(ca))(equalTo("")))
+          .provideLayer(native ++ liveKeygen ++ testEnvironment)
       }
     )

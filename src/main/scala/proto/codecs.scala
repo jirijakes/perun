@@ -47,16 +47,11 @@ val error: Codec[Error] =
       }
     )
 
-// final case class InvalidSignature(bytes: ByteVector, context: List[String])
-//     extends Err:
-//   def message: String = s"does not contain valid signature"
-//   def pushContext(ctx: String): Err = copy(context = ctx :: context)
-
 opaque type NodeId = PublicKey
 
 extension (id: NodeId)
   def nodeIdAsPublicKey: PublicKey = id
-  def hex: String = ??? // id.hex
+  def hex: String = id.bytes.toHex
 
 object NodeId:
   def fromPublicKey(pub: PublicKey): NodeId = pub

@@ -49,7 +49,7 @@ class GremlinP2P(g: GraphTraversalSource) extends P2P:
       .bothV()
       .properties("nodeId")
       .toList
-    ???
+    UIO(None)
 
   def offerChannel(c: ChannelAnnouncement): Task[Unit] =
     val n1 = getOrCreateNode(c.nodeId1)

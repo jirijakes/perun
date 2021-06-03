@@ -3,7 +3,7 @@ package perun.crypto.secp256k1
 import scala.annotation.targetName
 
 import com.sun.jna.*
-import org.bitcoins.crypto.Sha256Digest
+import org.bitcoins.crypto.HashDigest
 import scodec.bits.ByteVector
 import zio.*
 
@@ -16,22 +16,22 @@ enum Error:
 
 trait Secp256k1:
   def ecdh(sec: PrivateKey, pub: PublicKey): ByteVector
-  def sign(sec: PrivateKey, h: Sha256Digest): Signature
+  def sign(sec: PrivateKey, h: HashDigest): Signature
   def verify(
       s: Signature,
-      h: Sha256Digest,
+      h: HashDigest,
       k: NodeId | PublicKey
   ): Boolean
 
 def verifySignature(
     s: Signature,
-    h: Sha256Digest,
+    h: HashDigest,
     k: NodeId | PublicKey
 ): URIO[Has[Secp256k1], Boolean] = ZIO.access(_.get.verify(s, h, k))
 
 def signMessage(
     sec: PrivateKey,
-    h: Sha256Digest
+    h: HashDigest
 ): URIO[Has[Secp256k1], Signature] = ZIO.access(_.get.sign(sec, h))
 
 def native: ZLayer[Any, Error, Has[Secp256k1]] =
@@ -74,7 +74,7 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
             Pointer.NULL
           )
           ByteVector.view(out)
-        def sign(sec: PrivateKey, h: Sha256Digest): Signature =
+        def sign(sec: PrivateKey, h: HashDigest): Signature =
           val sig = unsafe.Signature.allocate
           val resr = lib.secp256k1_ecdsa_sign(
             ctx,
@@ -90,7 +90,7 @@ def native: ZLayer[Any, Error, Has[Secp256k1]] =
           Signature.fromBytes(ByteVector.view(out))
         def verify(
             s: Signature,
-            h: Sha256Digest,
+            h: HashDigest,
             k: NodeId | PublicKey
         ): Boolean =
           val sig = unsafe.Signature.allocate

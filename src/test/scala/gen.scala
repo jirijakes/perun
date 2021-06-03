@@ -19,7 +19,7 @@ val anyChain: Gen[Random, Chain] =
 val validKeyPair: Gen[Has[Keygen], PrivateKey] =
   Gen.fromEffect(generateKeypair)
 
-val validSignature: Gen[Any, Signature] = ???
+// val validSignature: Gen[Any, Signature] = ???
 
 val dummySignature = Gen.const(Signature.dummy)
 
