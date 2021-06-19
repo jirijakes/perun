@@ -6,6 +6,7 @@ import noise.*
 import scodec.*
 import scodec.bits.{hex, *}
 import scodec.codecs.uint16
+import org.typelevel.paiges.Document.ops.*
 import zio.*
 import zio.clock.Clock
 import zio.console.*
@@ -64,20 +65,41 @@ def start(
       .fromHub(hr)
       .map(b => perun.proto.decode(b).map((b, _)))
       .collect { case Right(m) => m }
-      .mapMParUnordered(100) {
-        case (b, Message.ChannelAnnouncement(c, _, _)) =>
-          txout(c.shortChannelId)
-            .zipPar(findChannel(c.shortChannelId))
-            .map((out, chan) =>
-              (
-                b,
-                Message
-                  .ChannelAnnouncement(c, out.map(_.scriptPubKey.hex), chan)
-              )
+      .tap {
+        case (b, Message.NodeAnnouncement(m)) =>
+          perun.proto.bolt.nodeAnnouncement.validation
+            .validate(m, b)
+            .flatMap(x =>
+              ZIO.foreach(x.getLog)(a =>
+                putStrLn(a.doc.render(120))
+              ) *> putStrLn("---------------------")
             )
+        case (_, m) => ZIO.unit
+      }
+      /* This can be parallelized but attention still has to be paid to
+       * order of messages. Peer will send us channel announcements first,
+       * then node announcements. We should make sure that validation of
+       * node announcement will not depend on when channel announcement
+       * is processed. There needs to be some synchronization or retrying.
+       */
+      .mapM {
+        // case (b, Message.ChannelUpdate(c, _)) =>
+        //   findChannel(c.shortChannelId).map(chan =>
+        //     (b, Message.ChannelUpdate(c, chan))
+        //   )
+        // case (b, Message.ChannelAnnouncement(c, _, _)) =>
+        //   txout(c.shortChannelId)
+        //     .zipPar(findChannel(c.shortChannelId))
+        //     .map((out, chan) =>
+        //       (
+        //         b,
+        //         Message
+        //           .ChannelAnnouncement(c, out.map(_.scriptPubKey.hex), chan)
+        //       )
+        //     )
         case x => UIO(x)
       }
-      .partitionEither(validate(conf))
+      .partitionEither((a, b) => UIO(Right(b))) //validate(conf))
       .use { (errs, msgs) =>
         val s1 = msgs
           .mapM {
@@ -92,7 +114,7 @@ def start(
               offerNode(n).as(Response.Ignore)
             case Message.ChannelAnnouncement(c, _, _) =>
               offerChannel(c).as(Response.Ignore)
-            case Message.ChannelUpdate(c)     => UIO(Response.Ignore)
+            case Message.ChannelUpdate(c, _)  => UIO(Response.Ignore)
             case Message.QueryChanellRange(q) => UIO(Response.Ignore)
           }
 
@@ -144,7 +166,7 @@ def start(
     _ <- (ZIO.sleep(3.second) *> hw
       .publish(
         Message.GossipTimestampFilter(
-          GossipTimestampFilter(Chain.Testnet, 1621345431, 2000000000)
+          GossipTimestampFilter(Chain.Testnet, 1622243853, 4294967295L)
         )
       )).fork
     // _ <- perun.proto.ping.schedule(hr, hw).fork

@@ -1,6 +1,6 @@
 name := "lnz"
 
-scalaVersion := "3.0.0"
+scalaVersion := "3.0.1-RC1"
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt Test/scalafmt")
 addCommandAlias("fix", "all Compile/scalafix Test/scalafix")
@@ -27,7 +27,7 @@ libraryDependencies ++= List(
   "dev.zio" %% "zio" % zioVersion,
   "dev.zio" %% "zio-streams" % zioVersion,
 //  "dev.zio" % "zio-logging_3.0.0-RC3" % "0.5.8",
-  // "dev.zio" % "zio-nio" % "1.0.0-RC10",
+//  "dev.zio" % "zio-nio" % "1.0.0-RC10",
   "dev.zio" %% "zio-prelude" % "1.0.0-RC5",
   "dev.zio" %% "zio-test" % zioVersion % Test,
   "dev.zio" %% "zio-test-sbt" % zioVersion % Test,
@@ -42,21 +42,22 @@ libraryDependencies ++= List(
   // "fr.acinq.secp256k1" % "secp256k1-kmp-jvm" % "0.5.1",
   // "fr.acinq.secp256k1" % "secp256k1-kmp-jni-jvm" % "0.5.1",
   "com.softwaremill.quicklens" %% "quicklens" % "1.7.4",
-  "org.scodec" %% "scodec-core" % "2.0.0",
+  // "org.scodec" %% "scodec-core" % "2.0.0-SNAPSHOT",
   "org.scodec" %% "scodec-bits" % "1.1.27",
   "org.hsqldb" % "hsqldb" % "2.6.0",
   "com.lihaoyi" %% "fansi" % "0.2.14",
   // "com.orientechnologies" % "orientdb-graphdb" % "3.2.0",
   "org.apache.tinkerpop" % "gremlin-core" % "3.5.0",
   "org.apache.tinkerpop" % "tinkergraph-gremlin" % "3.5.0",
-  "org.typelevel" % "paiges-core_2.13" % "0.4.1",
+  "org.typelevel" %% "paiges-core" % "0.4.2",
   "io.circe" %% "circe-core" % "0.14.1",
   "io.circe" %% "circe-parser" % "0.14.1",
   "net.java.dev.jna" % "jna" % "5.8.0",
   // "io.d11" %% "zhttp" % "1.0.0.0-RC16+18-bfbb9858+20210530-1124-SNAPSHOT",
-  "com.softwaremill.sttp.client3" %% "httpclient-backend-zio" % "3.3.5",
-  "com.softwaremill.sttp.client3" %% "circe" % "3.3.5",
-  "org.zeromq" % "jeromq" % "0.5.2"
+  "com.softwaremill.sttp.client3" %% "httpclient-backend-zio" % "3.3.6",
+  "com.softwaremill.sttp.client3" %% "circe" % "3.3.6",
+  "org.zeromq" % "jeromq" % "0.5.2",
+  "dev.optics" %% "monocle-core" % "3.0.0-RC2"
 )
 
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
@@ -67,6 +68,8 @@ enablePlugins(JavaAppPackaging)
 Global / cancelable := false
 
 semanticdbEnabled := true
+
+Compile / doc / scalacOptions ++= Seq("-snippet-compiler:compile")
 
 scalacOptions ++= List(
   // "-explain",

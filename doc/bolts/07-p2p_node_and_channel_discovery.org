@@ -44,6 +44,57 @@ Source: [[https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routi
    - [ ] once its funding output has been spent OR reorganized out:
      SHOULD forget a channel.
 
+* Channel update
+
+** Receiving [0/9]
+
+   
+    - [ ] if the ~short_channel_id~ does NOT match a previous ~channel_announcement~, OR if the channel has been closed in the meantime:
+      MUST ignore ~channel_update~'s that do NOT correspond to one of its own channels.
+
+    - [ ] SHOULD accept ~channel_update~'s for its own channels (even if non-public), in order to learn the associated origin nodes' forwarding parameters.
+
+    - [ ] if ~signature~ is not a valid signature, using ~node_id~ of the double-SHA256 of the entire message following the ~signature~ field (including unknown fields following ~fee_proportional_millionths~):
+      MUST NOT process the message further.
+      SHOULD fail the connection.
+      
+    - [ ] if the specified ~chain_hash~ value is unknown (meaning it isn't active on the specified chain):
+      MUST ignore the channel update.
+
+    - [ ] if the ~timestamp~ is equal to the last-received ~channel_update~ for this ~short_channel_id~ AND ~node_id~:
+
+      - [ ] if the fields below timestamp differ:
+         MAY blacklist this ~node_id~.
+         MAY forget all channels associated with it.
+
+      - [ ] if the fields below timestamp are equal:
+        SHOULD ignore this message
+
+    - [ ] if timestamp is lower than that of the last-received ~channel_update~ for this ~short_channel_id~ AND for ~node_id~:
+      SHOULD ignore the message.
+      
+    - [ ] otherwise:
+
+      - [ ] if the ~timestamp~ is unreasonably far in the future:
+        MAY discard the ~channel_update~.
+
+      - [ ] otherwise:
+        SHOULD queue the message for rebroadcasting.
+        MAY choose NOT to for messages longer than the minimum expected length.
+
+    - [ ] if the ~option_channel_htlc_max~ bit of ~message_flags~ is 0:
+      MUST consider htlc_maximum_msat not to be present.
+
+    - [ ] otherwise:
+
+      - [ ] if ~htlc_maximum_msat~ is not present or greater than channel capacity:
+        MAY blacklist this ~node_id~
+        SHOULD ignore this channel during route considerations.
+
+      - [ ] otherwise:
+        SHOULD consider the ~htlc_maximum_msat~ when routing.
+
+
 * Node announcement
 
 ** Receiving [1/9]

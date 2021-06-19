@@ -11,7 +11,7 @@ import zio.*
 export sttp.client3.UriContext
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 
-import perun.proto.codecs.ShortChannelId
+import perun.p2p.*
 
 final case class Response[A](result: Option[A]) derives Decoder
 

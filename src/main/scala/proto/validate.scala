@@ -5,7 +5,7 @@ import scodec.*
 import scodec.bits.BitVector
 
 import perun.crypto.*
-import perun.proto.codecs.NodeId
+import perun.p2p.*
 import perun.proto.gossip.*
 
 def validated[T](codec: Codec[T])(v: Codec[T] => Codec[T]): Codec[T] = v(codec)
@@ -36,11 +36,10 @@ private class Signed[T](
   def decode(bits: BitVector): Attempt[DecodeResult[T]] =
     codec.decode(bits) match
       case f: Attempt.Failure => f
-      case s @ Attempt.Successful(DecodeResult(t, rem)) =>
+      case s @ Attempt.Successful(DecodeResult(t, _, rem)) =>
         val witness = doubleSHA256(
           bits.drop(skipBits).dropRight(rem.length).toByteVector
         )
-        println(">>>>>>>>>>> " + t)
         val isValid = fs.iterator
           .map((sig, key) => true
           // Secp256k1

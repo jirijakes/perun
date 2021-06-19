@@ -6,10 +6,10 @@ import zio.test.Assertion.*
 import zio.test.*
 import zio.test.environment.*
 
-import perun.test.gen.*
 import perun.crypto.*
 import perun.crypto.keygen.liveKeygen
 import perun.crypto.secp256k1.native
+import perun.test.gen.*
 
 object NodeTest extends DefaultRunnableSpec:
 

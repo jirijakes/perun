@@ -47,24 +47,11 @@ val error: Codec[Error] =
       }
     )
 
-opaque type NodeId = PublicKey
-
-extension (id: NodeId)
-  def nodeIdAsPublicKey: PublicKey = id
-  def hex: String = id.bytes.toHex
-
-object NodeId:
-  def fromPublicKey(pub: PublicKey): NodeId = pub
-
-val nodeId: Codec[NodeId] = perun.crypto.PublicKey.codec
-
-opaque type Alias = ByteVector
-
-object Alias:
-  def apply(s: String) = ByteVector.view(s.getBytes)
-  def apply(b: ByteVector) = b
-
-val alias: Codec[Alias] = bytes(32)
+export perun.p2p.Alias.codec as alias
+export perun.p2p.NodeId.codec as nodeId
+export perun.p2p.ShortChannelId.codec as shortChannelId
+export perun.p2p.ShortChannelId.codecEncoded as encodedShortIds
+export perun.p2p.Timestamp.codec as timestamp
 
 enum Address:
   case Ip(ip: InetAddress, port: Int)
@@ -103,36 +90,9 @@ case class Color(r: Byte, g: Byte, b: Byte):
 
 val color: Codec[Color] = (byte :: byte :: byte).as[Color]
 
-case class ShortChannelId(block: Int, transaction: Int, output: Int):
-  override def toString = s"${block}x${transaction}x${output}"
-// import fansi.Color.*
-// s"${Cyan(block.toString)}${DarkGray("x")}${Yellow(
-// transaction.toString
-// )}${DarkGray("x")}${LightGreen(output.toString)}"
-
-given Ordering[ShortChannelId] =
-  Ordering.by(s => (s.block, s.transaction, s.output))
-
-val shortChannelId: Codec[ShortChannelId] =
-  (
-    ("block_height" | uint(24)) ::
-      ("transaction" | uint(24)) ::
-      ("output" | uint(16))
-  ).as[ShortChannelId]
-
-val encodedShortIds: Codec[Vector[ShortChannelId]] =
-  discriminated
-    .by(uint8)
-    .typecase(0, vector(shortChannelId).xmap(identity, _.sorted))
-    .typecase(1, zlib(vector(shortChannelId)).xmap(identity, _.sorted))
-
 opaque type Msat = BigInt
 
 val msat: Codec[Msat] = uint64.uint64
-
-opaque type Timestamp = Long
-
-val timestamp: Codec[Timestamp] = uint32
 
 // export UInt64.uint64
 // export UInt64.bigsize

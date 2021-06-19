@@ -8,8 +8,13 @@ import zio.stream.*
 
 import perun.crypto.*
 import perun.crypto.secp256k1.*
+import perun.p2p.*
 import perun.proto.*
-import perun.proto.codecs.nodeIdAsPublicKey
+import perun.proto.gossip.ChannelAnnouncement
+import perun.db.p2p.P2P
+import zio.prelude.ZValidation
+import perun.proto.bolt.bolt.Step
+import perun.proto.gossip.ChannelUpdate
 
 enum Invalid:
   case Signature(m: Message)
@@ -119,3 +124,14 @@ def validate(conf: perun.peer.Configuration)(
       ZIO.fromEither(validateChain(conf).applyOrElse(m, Right(_))) *>
       ZIO.fromEither(validateTxOutput.applyOrElse(m, Right(_)))
   ).either
+
+def validatio(
+    conf: perun.peer.Configuration
+)(b: ByteVector, m: Message): ZIO[Has[P2P], Throwable, ZValidation[
+  Step,
+  perun.proto.bolt.bolt.Invalid,
+  Message
+]] =
+  m match
+    case x @ Message.ChannelUpdate(m, _) =>
+      bolt.channelUpdate.validation.validate(m, b).map(_.map(_ => x))

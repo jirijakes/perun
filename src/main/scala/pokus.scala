@@ -60,21 +60,3 @@ object pokus extends App:
 
   def run(args: List[String]) =
     prg.provideCustomLayer(a ++ b ++ c ++ d ++ e).exitCode
-
-  def run2(args: List[String]) =
-    program
-      .provideCustomLayer(
-        tinkerpop.inMemory ++
-          liveKeygen ++
-          native ++
-          live("tcp://localhost:28332") ++
-          (
-            HttpClientZioBackend.layer() >>>
-              bitcoind(
-                uri"http://localhost:18332",
-                "__cookie__",
-                "4d34b17da1a21fd7015201b42e9ad763a58be4b2a8baa312fd78ced6411691d2"
-              )
-          )
-      )
-      .exitCode

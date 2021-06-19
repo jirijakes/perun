@@ -13,9 +13,14 @@ import zio.{Chunk, ZRef}
   * or end of stream when it will not emit any new chunks as the demand could
   * not be satisfied.
   *
-  * @example
-  *
+  * ### Example
+  * 
   * ```scala
+  * //{
+  * import zio.Chunk
+  * import zio.stream.*
+  * 
+  * //}
   * val s: UStream[Chunk[Int]] =
   *   ZStream
   *     .iterate(1)(_ + 1)

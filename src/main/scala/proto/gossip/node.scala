@@ -12,6 +12,7 @@ import zio.*
 
 import perun.crypto.*
 import perun.crypto.secp256k1.*
+import perun.p2p.*
 import perun.proto.blockchain.*
 import perun.proto.codecs.*
 import perun.proto.features.*

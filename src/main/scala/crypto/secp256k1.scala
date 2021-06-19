@@ -8,6 +8,7 @@ import scodec.bits.ByteVector
 import zio.*
 
 import perun.crypto.*
+import perun.p2p.*
 import perun.proto.codecs.*
 
 enum Error:

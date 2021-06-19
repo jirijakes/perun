@@ -98,7 +98,7 @@ object lnz extends App:
   ] =
     perun.crypto.keygen.liveKeygen ++
       // store.live("jdbc:hsqldb:file:testdb").orDie ++
-      tinkerpop.inMemory ++
+      P2P.inMemory ++
       (
         HttpClientZioBackend.layer().orDie >>>
           bitcoind(

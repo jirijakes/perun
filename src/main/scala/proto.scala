@@ -19,7 +19,7 @@ enum Message:
       spk: Option[String],
       channel: Option[Channel]
   )
-  case ChannelUpdate(m: gossip.ChannelUpdate)
+  case ChannelUpdate(m: gossip.ChannelUpdate, channel: Option[Channel])
 
 import Message.*
 
@@ -30,7 +30,7 @@ val messageCodec: Codec[Message] = discriminated[Message].by(uint16)
   .caseP(19)  { case Pong(m)                      => m }(Pong.apply                              )(ping.pong                   )
   .caseP(256) { case ChannelAnnouncement(m, _, _) => m }(ChannelAnnouncement.apply(_, None, None))(gossip.channelAnnouncement  )
   .caseP(257) { case NodeAnnouncement(m)          => m }(NodeAnnouncement.apply                  )(gossip.nodeAnnouncement     )
-  .caseP(258) { case ChannelUpdate(m)             => m }(ChannelUpdate.apply                     )(gossip.channelUpdate        )
+  .caseP(258) { case ChannelUpdate(m, _)          => m }(ChannelUpdate.apply(_, None)            )(gossip.channelUpdate        )
   .caseP(263) { case QueryChanellRange(m)         => m }(QueryChanellRange.apply                 )(gossip.queryChannelRange    )
   .caseP(264) { case ReplyChannelRange(m)         => m }(ReplyChannelRange.apply                 )(gossip.replyChannelRange    )
   .caseP(265) { case GossipTimestampFilter(m)     => m }(GossipTimestampFilter.apply             )(gossip.gossipTimestampFilter)

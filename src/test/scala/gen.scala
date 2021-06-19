@@ -7,11 +7,12 @@ import zio.test.*
 
 import perun.crypto.*
 import perun.crypto.keygen.*
+import perun.crypto.secp256k1.Secp256k1
+import perun.p2p.*
 import perun.proto.blockchain.Chain
 import perun.proto.codecs.*
 import perun.proto.features.*
 import perun.proto.gossip.ChannelAnnouncement
-import perun.crypto.secp256k1.Secp256k1
 
 val anyChain: Gen[Random, Chain] =
   Gen.elements(Chain.Testnet, Chain.Mainnet, Chain.Signet)

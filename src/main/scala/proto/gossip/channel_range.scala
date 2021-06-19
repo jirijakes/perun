@@ -5,6 +5,7 @@ import scodec.*
 import scodec.bits.{BitVector, ByteVector}
 import scodec.codecs.*
 
+import perun.p2p.*
 import perun.proto.blockchain.*
 import perun.proto.codecs.*
 import perun.proto.tlv.*
