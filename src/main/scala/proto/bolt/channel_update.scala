@@ -12,10 +12,10 @@ import perun.db.p2p.*
 
 val validatePreviousChannel: Val[Has[P2P], Throwable, ChannelUpdate] =
   validate(
-    (upd, _) =>
-      predicateM(findChannel(upd.shortChannelId))(
+    ctx =>
+      predicateM(findChannel(ctx.message.shortChannelId))(
         _.nonEmpty,
-        upd,
+        ctx.message,
         ignore("Channel is unknown.")
       ),
     split("if the") & field("short_channel_id") & split(

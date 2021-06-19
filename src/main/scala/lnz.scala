@@ -104,7 +104,7 @@ object lnz extends App:
           bitcoind(
             uri"http://10.0.0.21:18332",
             "__cookie__",
-            "4d34b17da1a21fd7015201b42e9ad763a58be4b2a8baa312fd78ced6411691d2"
+            "618f37e21aba4adcf652d20fe181db22a03830016e23a6bc03f4fa5f9f3b1acb"
           ).orDie
       ) ++
       native.mapError(e => new Exception(e.toString)).orDie

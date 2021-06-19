@@ -5,9 +5,11 @@ import org.bitcoins.crypto.CryptoUtil.{doubleSHA256, sha256}
 import org.typelevel.paiges.*
 import scodec.bits.ByteVector
 import zio.*
+import zio.console.*
 import zio.prelude.*
 import zio.stream.*
 
+import perun.net.rpc.*
 import perun.crypto.*
 import perun.crypto.secp256k1.*
 import perun.p2p.*
@@ -19,8 +21,8 @@ import perun.db.p2p.*
   * details about creating bolts.
   */
 class Bolt[-R, +E, A](
-    number: String,
-    name: String,
+    val number: String,
+    val name: String,
     validations: NonEmptyChunk[Val[R, E, A]]
 ):
   /** Perform actual validation of the given message.
@@ -30,7 +32,8 @@ class Bolt[-R, +E, A](
     */
   def validate(
       message: A,
-      bytes: ByteVector
+      bytes: ByteVector,
+      conf: perun.peer.Configuration
   ): ZIO[R, E, ZValidation[Step, Invalid, A]] =
     ZIO
       .collectAll(
@@ -38,7 +41,7 @@ class Bolt[-R, +E, A](
           .zipWithIndexFrom(1)
           .map((valdef, index) =>
             valdef
-              .validate(message, bytes)
+              .validate(Context(message, bytes, conf))
               .map(v => {
                 v.log(Step(index, valdef.description, v))
               })
@@ -103,13 +106,19 @@ def bolt[R, E, A](number: String, name: String)(
 ): Bolt[R, E, A] =
   new Bolt[R, E, A](number, name, NonEmptyChunk(v1, vs*))
 
+case class Context[A](
+    message: A,
+    bytes: ByteVector,
+    conf: perun.peer.Configuration
+)
+
 /** A single validation of message of `A`.
   *
   * @param validate function to perform the actual validation
   * @param description
   */
 case class Val[-R, +E, A](
-    validate: (A, ByteVector) => ZIO[R, E, Validation[Invalid, A]],
+    validate: Context[A] => ZIO[R, E, Validation[Invalid, A]],
     description: Doc
 )
 
@@ -134,12 +143,12 @@ enum Response:
   case CloseChannel
 
 inline def validate[R, E, A](
-    validation: (A, ByteVector) => ZIO[R, E, Validation[Invalid, A]],
+    validation: Context[A] => ZIO[R, E, Validation[Invalid, A]],
     description: Doc
 ): Val[R, E, A] = Val(validation, description)
 
 inline def validate[R, E, A, D: Document](
-    validation: (A, ByteVector) => ZIO[R, E, Validation[Invalid, A]],
+    validation: Context[A] => ZIO[R, E, Validation[Invalid, A]],
     description: D
 ): Val[R, E, A] = validate(validation, Document[D].document(description))
 
@@ -157,7 +166,7 @@ inline def predicate[A](
     p: => Boolean,
     a: => A,
     fail: => Invalid
-): Validation[Invalid, A] = if p then accept(a) else Validation.fail(fail)
+) = ZIO.succeed(if p then accept(a) else Validation.fail(fail))
 
 /** Create a validation from effectful predicate.
   *
@@ -170,4 +179,43 @@ inline def predicateM[R, E, A0, A](m: ZIO[R, E, A0])(
     a: => A,
     fail: => Invalid
 ): ZIO[R, E, Validation[Invalid, A]] =
-  m.map(l => predicate(p(l), a, fail))
+  m.flatMap(l => predicate(p(l), a, fail))
+
+def validate(conf: perun.peer.Configuration)(
+    bytes: ByteVector,
+    message: Message
+): ZIO[Has[P2P] & Has[Secp256k1] & Console & Has[Rpc], Throwable, ZValidation[
+  Step,
+  Invalid,
+  Message
+]] =
+  import perun.proto.bolt.*
+
+  message match
+    case Message.NodeAnnouncement(m) =>
+      react(nodeAnnouncement.validation, bytes, m, conf)
+        .map(_.map(Message.NodeAnnouncement.apply))
+    case Message.ChannelAnnouncement(m) =>
+      react(channelAnnouncement.validation, bytes, m, conf)
+        .map(_.map(Message.ChannelAnnouncement.apply))
+    case Message.ChannelUpdate(m) =>
+      react(channelUpdate.validation, bytes, m, conf)
+        .map(_.map(Message.ChannelUpdate.apply))
+    case m => UIO.succeed(Validation.succeed(m))
+
+def react[R, E, A](
+    bolt: Bolt[R, E, A],
+    bytes: ByteVector,
+    message: A,
+    conf: perun.peer.Configuration
+): ZIO[R & Console, E, ZValidation[Step, Invalid, A]] =
+  import org.typelevel.paiges.Document.ops.given
+  bolt
+    .validate(message, bytes, conf)
+    .tap { result =>
+      putStrLn(s">>>>>>>>>> ${bolt.number} ${bolt.name} <<<<<<<<<<\n").ignore *>
+        ZIO.foreach(result.getLog)(step =>
+          putStrLn(step.doc.render(120)).ignore
+        ) *>
+        putStrLn("---------------------").ignore
+    }

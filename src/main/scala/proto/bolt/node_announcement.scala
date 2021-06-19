@@ -14,14 +14,14 @@ import perun.db.p2p.*
 
 val validateSignature: Val[Has[Secp256k1], Nothing, NodeAnnouncement] =
   validate(
-    (ann, b) =>
+    ctx =>
       predicateM(
         verifySignature(
-          ann.signature,
-          doubleSHA256(b.drop(2 + 64)),
-          ann.nodeId
+          ctx.message.signature,
+          doubleSHA256(ctx.bytes.drop(2 + 64)),
+          ctx.message.nodeId
         )
-      )(_ == true, ann, failConnection("Signature is invalid.")),
+      )(_ == true, ctx.message, failConnection("Signature is invalid.")),
     text("if") & field("signature") & split(
       "is NOT a valid signature (using"
     ) & field("node_id") & split(
@@ -35,17 +35,17 @@ val validateSignature: Val[Has[Secp256k1], Nothing, NodeAnnouncement] =
 
 val validatePreviousChannel: Val[Has[P2P], Throwable, NodeAnnouncement] =
   validate(
-    (ann, _) => {
+    ctx => {
       val chan =
-        predicateM(findChannels(ann.nodeId))(
+        predicateM(findChannels(ctx.message.nodeId))(
           _.nonEmpty,
-          ann,
+          ctx.message,
           ignore("No known channel for node ID found, required at least one.")
         )
       val node =
-        predicateM(findNode(ann.nodeId))(
-          _.exists(_.timestamp < ann.timestamp),
-          ann,
+        predicateM(findNode(ctx.message.nodeId))(
+          _.exists(_.timestamp < ctx.message.timestamp),
+          ctx.message,
           ignore("No known node for node ID found, required at least one.")
         )
 

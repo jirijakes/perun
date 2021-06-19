@@ -33,7 +33,7 @@ def bitcoind(
 ): ZLayer[Any, Throwable, Has[Rpc]] =
   ZLayer
     .fromEffect(HttpClientZioBackend())
-    .zipPar(ZLayer.fromEffect(Semaphore.make(1)))
+    .zipPar(ZLayer.fromEffect(Semaphore.make(2)))
     .map { (cl, sem) =>
 
       class RpcPartialApply[Res]:
