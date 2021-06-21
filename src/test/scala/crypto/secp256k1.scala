@@ -1,11 +1,11 @@
 package perun.crypto.secp256k1
 
-import io.circe.{Decoder, Json, parser}
 import org.bitcoins.crypto.CryptoUtil.sha256
 import org.bitcoins.crypto.Sha256Digest
 import scodec.bits.ByteVector
 import zio.*
 import zio.blocking.*
+import zio.json.*
 import zio.stream.*
 import zio.test.Assertion.*
 import zio.test.*
@@ -14,22 +14,28 @@ import perun.crypto.*
 
 object test:
 
-  given Decoder[Signature] =
-    Decoder[String].map(s => Signature.fromBytes(ByteVector.fromValidHex(s)))
+  given JsonDecoder[Signature] =
+    JsonDecoder[String].map(s =>
+      Signature.fromBytes(ByteVector.fromValidHex(s))
+    )
 
-  given Decoder[PrivateKey] = Decoder[String].map(PrivateKey.fromHex)
+  given JsonDecoder[PrivateKey] = JsonDecoder[String].map(PrivateKey.fromHex)
 
-  given Decoder[Sha256Digest] = Decoder[String].map(Sha256Digest.apply)
-
-  final case class Tests(valid: Vector[Test]) derives Decoder
+  given JsonDecoder[Sha256Digest] = JsonDecoder[String].map(Sha256Digest.apply)
 
   final case class Test(
       m: Sha256Digest,
       d: PrivateKey,
       signature: Signature
-  ) derives Decoder
+  )
 
-      // Thanks to https://github.com/bitcoinjs/tiny-secp256k1
+  given JsonDecoder[Test] = DeriveJsonDecoder.gen
+
+  final case class Tests(valid: Vector[Test])
+
+  given JsonDecoder[Tests] = DeriveJsonDecoder.gen
+
+  // Thanks to https://github.com/bitcoinjs/tiny-secp256k1
   val vector: Gen[Blocking, Test] =
     Gen
       .fromEffect(
@@ -37,8 +43,11 @@ object test:
           .fromResource("perun/crypto/secp256k1_test_vector.json")
           .transduce(ZTransducer.utf8Decode)
           .runCollect
-          .flatMap(s => ZIO.fromEither(parser.parse(s.mkString)))
-          .flatMap(j => ZIO.fromEither(j.as[Tests]).map(_.valid))
+          .flatMap(s =>
+            ZIO
+              .fromEither(s.mkString.fromJson[Tests].map(_.valid))
+              .mapError(m => new Exception(m))
+          )
           .orDie
       )
       .flatMap(Gen.fromIterable(_))

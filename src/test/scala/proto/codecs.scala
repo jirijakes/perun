@@ -50,8 +50,8 @@ object test extends DefaultRunnableSpec:
             )
 
             checkAll(gen) { (b, l) =>
-              assert(bigsize.decode(b))(
-                equalTo(Attempt.Successful(DecodeResult(l, BitVector.empty)))
+              assert(bigsize.decodeValue(b))(
+                equalTo(Attempt.Successful(l))
               )
             }
           },
