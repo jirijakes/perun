@@ -14,7 +14,7 @@ addCommandAlias(
 )
 addCommandAlias("prepare", "; fix; fmt")
 
-resolvers += Resolver.publishMavenLocal
+resolvers ++= List(Resolver.publishMavenLocal, Resolver.sonatypeRepo("snapshots"))
 
 val zioVersion = "1.0.9"
 
@@ -33,7 +33,7 @@ libraryDependencies ++= List(
   "dev.zio" %% "zio-test-sbt" % zioVersion % Test,
   "dev.zio" %% "zio-test-magnolia" % zioVersion % Test,
   "dev.zio" %% "zio-test-refined" % zioVersion % Test,
-  // "dev.zio" % "zio-json" % "0.1.4",
+  "dev.zio" %% "zio-json" % "0.1.5+34-c9ea9157-SNAPSHOT",
   //"nl.vroste" %% "rezilience" % "0.6.0+29-1ae49682+20210511-0646-SNAPSHOT",
   // "org.bitcoin-s" % "bitcoin-s-core_2.13" % "0.6.0",
   "org.bitcoin-s" % "bitcoin-s-core_2.13" % "0.6.0" excludeAll ("org.scodec"),
