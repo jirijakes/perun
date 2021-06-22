@@ -25,7 +25,8 @@ import perun.proto.gossip.{
   receiveMessage as receiveGTF
 }
 import perun.proto.init.Init
-import perun.proto.{Message, Response}
+import perun.proto.Message
+import perun.proto.bolt.bolt.{Invalid, Response}
 
 final case class State(
     gossipFilter: Option[GossipTimestampFilter]
@@ -90,13 +91,16 @@ def start(
             case Message.QueryChanellRange(q) => UIO(Response.Ignore)
           }
 
-        ???
+        val s2 = errs.map(
+          _.head match
+            case Invalid.Denied(_, r) => r
+        )
 
-        // s1.merge(s2).foreach {
+        s1.merge(s2).foreach {
           // case Response.Send(m)        => hw.publish(m).unit
-          // case Response.Ignore         => ZIO.unit
-          // case Response.FailConnection => ZIO.unit
-        // }
+          case Response.Ignore         => ZIO.unit
+          case Response.FailConnection => ZIO.unit
+        }
       }
       .fork
     _ <- in.transduce(decrypt(rk)).foreach(b => hr.publish(b)).fork
