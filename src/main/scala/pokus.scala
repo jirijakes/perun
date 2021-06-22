@@ -1,4 +1,6 @@
 import sttp.client3.httpclient.zio.HttpClientZioBackend
+import zhttp.http.*
+import zhttp.service.*
 import zio.*
 import zio.console.*
 import zio.stream.*
@@ -11,6 +13,21 @@ import perun.net.rpc.*
 import perun.net.zmq.*
 
 object pokus extends App:
+
+  val prg =
+    for
+      res <- Client.request(
+        Request(
+          (Method.POST, URL.fromString("").getOrElse(???)),
+          content = HttpData.CompleteData(???)
+        )
+      )
+      // _ = res.
+    yield ()
+
+  def run(args: List[String]) = ???
+
+object pokusHas extends App:
 
   // def main(args: Array[String]): Unit =
   //   val z = MultiSignatureScriptPubKey(
