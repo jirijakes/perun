@@ -23,9 +23,15 @@ import perun.db.p2p.P2P
 import perun.p2p.*
 import perun.proto.codecs.*
 import perun.proto.gossip.{ChannelAnnouncement, NodeAnnouncement}
+import scala.reflect.ClassTag
 
 def gremlin: ZLayer[Has[GraphTraversalSource], Nothing, Has[P2P]] =
   Gremlin.apply.toLayer
+
+def cast[T: ClassTag](v: Any): Option[T] =
+  v match
+    case t: T => Some(t)
+    case _    => None
 
 /** Layer for creating an in-memory Tinkergraph database suitable for Gremlin.
   */
@@ -47,7 +53,12 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
     val res = g
       .V()
       .has("node", "id", nodeId.hex)
-      .valueMap("id", "timestamp")
+      .local(
+        properties("id", "timestamp", "blacklisted")
+          .group()
+          .by(key())
+          .by(value())
+      )
       .toList()
 
     val node =
@@ -56,12 +67,13 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
           val m = p.asScala.toMap[AnyRef, Any]
 
           for
-            (id: java.util.ArrayList[String] @unchecked) <- m.get("id")
-            (ts: java.util.ArrayList[Long] @unchecked) <- m.get("timestamp")
-          yield Node(
-            NodeId.fromHex(id.get(0)),
-            Timestamp.fromTimestamp(ts.get(0))
-          )
+            id <- m.get("id").flatMap(cast[String])
+            ts <- m.get("timestamp").flatMap(cast[Long])
+            bl <- m
+              .get("blacklisted")
+              .flatMap(cast[Boolean])
+              .orElse(Some(false))
+          yield Node(NodeId.fromHex(id), Timestamp.fromTimestamp(ts), bl)
         }
         .toList
         .headOption

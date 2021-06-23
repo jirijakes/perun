@@ -6,13 +6,13 @@ Source: [[https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routi
 
 ** Receiving [3/6]
 
-   - [X] MUST verify the integrity AND authenticity of the message by verifying the signatures. ([[file:~/dev/scala/lnz/src/main/scala/proto/bolt/channel_announcement.scala::Channel announcement signatures][ref]])
+   - [X] MUST verify the integrity AND authenticity of the message by verifying the signatures. ([[file:../../src/main/scala/proto/bolt/channel_announcement.scala::Channel announcement signatures][ref]])
 
    - [ ] if there is an unknown even bit in the ~features~ field:
      MUST NOT attempt to route messages through the channel.
 
    - [X] if the ~short_channel_id~'s output does NOT correspond to a P2WSH (using ~bitcoin_key_1~ and ~bitcoin_key_2~, as specified in BOLT #3) OR the output is spent:
-     MUST ignore the message. ([[file:~/dev/scala/lnz/src/main/scala/proto/bolt/channel_announcement.scala::Channel announcement tx output][ref]])
+     MUST ignore the message. ([[file:../../src/main/scala/proto/bolt/channel_announcement.scala::Channel announcement tx output][ref]])
 
    - [X] if the specified ~chain_hash~ is unknown to the receiver:
      MUST ignore the message. ([[file:../../src/main/scala/proto/bolt/channel_announcement.scala::Channel announcement chain hash][ref]])
@@ -20,12 +20,12 @@ Source: [[https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routi
    - [-] otherwise:
      
      - [X] if ~bitcoin_signature_1~, ~bitcoin_signature_2~, ~node_signature_1~ OR ~node_signature_2~ are invalid OR NOT correct:
-       SHOULD fail the connection. ([[file:~/dev/scala/lnz/src/main/scala/proto/bolt/channel_announcement.scala::Channel announcement signatures][ref]])
+       SHOULD fail the connection. ([[file:../../src/main/scala/proto/bolt/channel_announcement.scala::Channel announcement signatures][ref]])
        
-     - [ ] otherwise:
+     - [-] otherwise:
        
-       - [ ] if ~node_id_1~ OR ~node_id_2~ are blacklisted:
-	 SHOULD ignore the message.
+       - [X] if ~node_id_1~ OR ~node_id_2~ are blacklisted:
+	 SHOULD ignore the message. ([[file:../../src/main/scala/proto/bolt/channel_announcement.scala::Channel announcement blacklisted node][ref]])
 	 
        - [ ] otherwise:
 	 

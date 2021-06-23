@@ -58,11 +58,7 @@ val validateChain: Val[Any, Nothing, ChannelAnnouncement] =
 val validateTxOutput: Val[Has[Rpc], Throwable, ChannelAnnouncement] =
   validate(
     ctx =>
-      predicateM(
-        txout(ctx.message.shortChannelId).tapCause(c =>
-          UIO(println(">>>> " + c))
-        )
-      )(
+      predicateM(txout(ctx.message.shortChannelId))(
         _.exists { out =>
           val multisig = MultiSignatureScriptPubKey(
             2,
@@ -86,10 +82,28 @@ val validateTxOutput: Val[Has[Rpc], Throwable, ChannelAnnouncement] =
     ) / text("MUST ignore the message.").indent(3)
   )
 
-val validation
-    : Bolt[Has[Secp256k1] & Has[Rpc], Throwable, ChannelAnnouncement] =
+// <<Channel announcement blacklisted node>>
+val validateNodes: Val[Has[P2P], Throwable, ChannelAnnouncement] =
+  validate(
+    ctx =>
+      predicateM(
+        findNode(ctx.message.nodeId1) <&> findNode(ctx.message.nodeId2)
+      )(
+        _.mapN(_.blacklisted || _.blacklisted).forall(_ == false),
+        ctx.message,
+        ignore("One of nodes is blacklisted.")
+      ),
+    text("if") & field("node_id_1") & text("OR") & field("node_id_2") & split(
+      "are blacklisted:"
+    ) / text("SHOULD ignore the message.").indent(3)
+  )
+
+val validation: Bolt[Has[
+  Secp256k1
+] & Has[Rpc] & Has[P2P], Throwable, ChannelAnnouncement] =
   bolt("#7", "Channel announcement")(
     validateChain,
+    validateTxOutput,
     validateSignatures,
-    validateTxOutput
+    validateNodes
   )
