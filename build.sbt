@@ -57,7 +57,8 @@ libraryDependencies ++= List(
   "com.softwaremill.sttp.client3" %% "httpclient-backend-zio" % "3.3.6",
   "com.softwaremill.sttp.client3" %% "circe" % "3.3.6",
   "org.zeromq" % "jeromq" % "0.5.2",
-  "dev.optics" %% "monocle-core" % "3.0.0-RC2"
+  "dev.optics" %% "monocle-core" % "3.0.0-RC2",
+  "org.parboiled" % "parboiled-scala_2.13" % "1.3.1"
 )
 
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")

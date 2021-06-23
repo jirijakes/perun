@@ -16,6 +16,7 @@ import perun.db.p2p.*
 import perun.p2p.*
 import perun.net.rpc.*
 
+// <<Channel announcement signatures>>
 val validateSignatures: Val[Has[Secp256k1], Nothing, ChannelAnnouncement] =
   validate(
     ctx => {
@@ -39,6 +40,7 @@ val validateSignatures: Val[Has[Secp256k1], Nothing, ChannelAnnouncement] =
     ).indent(3)
   )
 
+// <<Channel announcement chain hash>>
 val validateChain: Val[Any, Nothing, ChannelAnnouncement] =
   validate(
     ctx =>
@@ -52,6 +54,7 @@ val validateChain: Val[Any, Nothing, ChannelAnnouncement] =
     ) / text("MUST ignore the message.").indent(3)
   )
 
+// <<Channel announcement tx output>>
 val validateTxOutput: Val[Has[Rpc], Throwable, ChannelAnnouncement] =
   validate(
     ctx =>

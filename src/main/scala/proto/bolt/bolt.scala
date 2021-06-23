@@ -70,8 +70,12 @@ object Step:
 
     val errors = res.map(msgs =>
       stack(msgs.map {
-        case Invalid.Failure(m)   => (char('•') & split(m)).style(Fg.Red)
-        case Invalid.Denied(m, _) => (char('•') & split(m)).style(Fg.Red)
+        case Invalid.Failure(m) =>
+          (char('•') & split(m)).style(Fg.Red)
+        case Invalid.Denied(m, Response.Ignore) =>
+          (char('•') & split(m)).style(Fg.Yellow)
+        case Invalid.Denied(m, _) =>
+          (char('•') & split(m)).style(Fg.Red)
       })
     )
 
