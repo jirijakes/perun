@@ -29,7 +29,7 @@ Source: [[https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routi
 	 
        - [ ] otherwise:
 	 
-	 - [ ] if the transaction referred to was NOT previously announced as a channel:
+ 	 - [ ] if the transaction referred to was NOT previously announced as a channel:
 	   
 	   - [ ] SHOULD queue the message for rebroadcasting.
 	     
