@@ -72,7 +72,7 @@ val validateTxOutput: Val[Has[Rpc], Throwable, ChannelAnnouncement] =
         },
         ctx.message,
         ignore(
-          "Short channel ID does not refer to a valie unspent P2WSH transaction."
+          "Short channel ID does not refer to a valid unspent P2WSH transaction."
         )
       ),
     split("if the") & field("short_channel_id") + split(
@@ -98,6 +98,47 @@ val validateNodes: Val[Has[P2P], Throwable, ChannelAnnouncement] =
     ) / text("SHOULD ignore the message.").indent(3)
   )
 
+// <<Channel announcement previous announcement>>
+val validatePreviousAnnouncement
+    : Val[Has[P2P], Throwable, ChannelAnnouncement] =
+  validate(
+    ctx =>
+      predicateMF(findChannel(ctx.message.shortChannelId))(
+        _.forall(c =>
+          c.node1 == ctx.message.nodeId1 && c.node2 == ctx.message.nodeId2
+        ),
+        ctx.message,
+        _.fold(
+          blacklist(
+            "Nodes broadcast same short channel ID with different nodes.",
+            ctx.message.nodeId1,
+            ctx.message.nodeId2
+          )
+        )(c =>
+          blacklist(
+            "Nodes broadcast same short channel ID with different nodes.",
+            ctx.message.nodeId1,
+            ctx.message.nodeId2,
+            c.node1,
+            c.node2
+          )
+        )
+      ),
+    split("if it has previously received a valid") & field(
+      "channel_announcement"
+    ) + split(
+      ", for the same transaction, in the same block, but for a different"
+    ) & field("node_id_1") & text("or") & field("node_id_2") + char(
+      ':'
+    ) / (split("SHOULD blacklist the previous message's") & field(
+      "node_id_1"
+    ) & field("and") & field("node_id_2") + split(", as well as this") & field(
+      "node_id_1"
+    ) & text("and") & field("node_id_2") & split(
+      "AND forget any channels connected to them."
+    )).indent(3)
+  )
+
 val validation: Bolt[Has[
   Secp256k1
 ] & Has[Rpc] & Has[P2P], Throwable, ChannelAnnouncement] =
@@ -105,5 +146,6 @@ val validation: Bolt[Has[
     validateChain,
     validateTxOutput,
     validateSignatures,
-    validateNodes
+    validateNodes,
+    validatePreviousAnnouncement
   )

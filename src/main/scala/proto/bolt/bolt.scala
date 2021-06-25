@@ -145,6 +145,7 @@ enum Response:
   case Ignore
   case FailConnection
   case CloseChannel
+  case Blacklist(nodes: NonEmptyChunk[NodeId])
 
 inline def validate[R, E, A](
     validation: Context[A] => ZIO[R, E, Validation[Invalid, A]],
@@ -158,6 +159,9 @@ inline def validate[R, E, A, D: Document](
 
 inline def ignore(reason: String): Invalid =
   Invalid.Denied(reason, Response.Ignore)
+
+inline def blacklist(reason: String, node0: NodeId, nodes: NodeId*): Invalid =
+  Invalid.Denied(reason, Response.Blacklist(NonEmptyChunk(node0, nodes*)))
 
 inline def failConnection(reason: String): Invalid =
   Invalid.Denied(reason, Response.FailConnection)
@@ -184,6 +188,19 @@ inline def predicateM[R, E, A0, A](m: ZIO[R, E, A0])(
     fail: => Invalid
 ): ZIO[R, E, Validation[Invalid, A]] =
   m.flatMap(l => predicate(p(l), a, fail))
+
+/** Create a validation from effectful predicate.
+  *
+  * @param p predicate
+  * @param a message to return in case of success
+  * @param fail error in case of failure
+  */
+inline def predicateMF[R, E, A0, A](m: ZIO[R, E, A0])(
+    p: A0 => Boolean,
+    a: => A,
+    fail: A0 => Invalid
+): ZIO[R, E, Validation[Invalid, A]] =
+  m.flatMap(l => predicate(p(l), a, fail(l)))
 
 def validate(conf: perun.peer.Configuration)(
     bytes: ByteVector,

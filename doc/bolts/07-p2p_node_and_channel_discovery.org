@@ -35,8 +35,8 @@ Source: [[https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routi
 	     
 	   - [ ] MAY choose NOT to for messages longer than the minimum expected length.
 	     
-       - [ ] if it has previously received a valid ~channel_announcement~, for the same transaction, in the same block, but for a different node_id_1 or node_id_2:
-	 SHOULD blacklist the previous message's ~node_id_1~ and ~node_id_2~, as well as this ~node_id_1~ and ~node_id_2~ AND forget any channels connected to them.
+       - [X] if it has previously received a valid ~channel_announcement~, for the same transaction, in the same block, but for a different node_id_1 or node_id_2:
+	 SHOULD blacklist the previous message's ~node_id_1~ and ~node_id_2~, as well as this ~node_id_1~ and ~node_id_2~ AND forget any channels connected to them. ([[file:../../src/main/scala/proto/bolt/channel_announcement.scala::Channel announcement previous announcement][ref]])
 	 
        - [ ] otherwise:
 	 SHOULD store this ~channel_announcement~.
