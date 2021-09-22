@@ -38,7 +38,7 @@ object test:
               .fromEither(s.mkString.fromJson[Vector[Test]])
               .mapError(m => new Exception(m))
           )
-        .orDie
+          .orDie
       )
       .flatMap(Gen.fromIterable(_))
 

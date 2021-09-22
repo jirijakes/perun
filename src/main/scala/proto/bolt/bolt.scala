@@ -42,9 +42,7 @@ class Bolt[-R, +E, A](
           .map((valdef, index) =>
             valdef
               .validate(Context(message, bytes, conf))
-              .map(v => {
-                v.log(Step(index, valdef.description, v))
-              })
+              .map(v => v.log(Step(index, valdef.description, v)))
           )
       )
       .map(_.reduce(_ &> _))

@@ -90,21 +90,21 @@ object lnz extends App:
       // .tap(xxx => ZIO.effectTotal(println("###> " + xxx)))
       .collect("BOOOM") { case (Left(m), Some(n)) => (m, n) }
 
-  lazy val dep: ZLayer[
+  val dep: ZLayer[
     zio.blocking.Blocking,
     Nothing,
     Has[Secp256k1] & Has[Rpc] & Has[P2P] &
-      Has[Keygen] // & Has[perun.db.store.Store]
+      Has[Keygen] & Has[perun.db.store.Store]
   ] =
     perun.crypto.keygen.liveKeygen ++
-      // store.live("jdbc:hsqldb:file:testdb").orDie ++
+      store.live("jdbc:hsqldb:file:testdb").orDie ++
       P2P.inMemory ++
       (
         HttpClientZioBackend.layer().orDie >>>
           bitcoind(
             uri"http://10.0.0.21:18332",
             "__cookie__",
-            "618f37e21aba4adcf652d20fe181db22a03830016e23a6bc03f4fa5f9f3b1acb"
+            "b1ff31caa6d6324557d010d2f8257d5dc9e9f90222281b97a51605f2460ebb4c"
           ).orDie
       ) ++
       native.mapError(e => new Exception(e.toString)).orDie

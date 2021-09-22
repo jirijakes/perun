@@ -124,12 +124,12 @@ def start(
     // )
     // )
     // .fork
-    _ <- (ZIO.sleep(3.second) *> hw
-      .publish(
-        Message.GossipTimestampFilter(
-          GossipTimestampFilter(Chain.Testnet, 1622243853, 4294967295L)
-        )
-      )).fork
+    // _ <- (ZIO.sleep(3.second) *> hw
+      // .publish(
+        // Message.GossipTimestampFilter(
+          // GossipTimestampFilter(Chain.Testnet, 0L, 4294967295L)
+        // )
+      // )).fork
     // _ <- perun.proto.ping.schedule(hr, hw).fork
     _ <- ZIO.never
   yield ()

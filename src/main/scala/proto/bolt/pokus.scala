@@ -20,7 +20,10 @@ class Bolt[-R, +E, A](
     name: String,
     vs: List[Val[R, E, A]]
 ):
-  def validate(a: A, b: ByteVector): ZIO[R, E, ZValidation[Nothing, Invalid, A]] =
+  def validate(
+      a: A,
+      b: ByteVector
+  ): ZIO[R, E, ZValidation[Nothing, Invalid, A]] =
     val x = vs.map(_.v(a, b))
     val z = ZIO.collectAll(x).map(z => z.reduce(_ &> _))
     z
@@ -100,7 +103,9 @@ def validateSignature(
 
 def vvv(
     s: String
-)(in: String, b: ByteVector): UIO[Validation[Invalid, String]] = UIO(ignore("Hovno " + s)) //UIO(accept(s))
+)(in: String, b: ByteVector): UIO[Validation[Invalid, String]] = UIO(
+  ignore("Hovno " + s)
+) //UIO(accept(s))
 
 def field(s: String): Doc =
   Doc.text(s).style(Style.Ansi.Fg.Yellow ++ Style.Ansi.Attr.Bold)

@@ -17,7 +17,11 @@ object Timestamp:
   def fromTimestamp(l: Long): Timestamp = l
   val codec: Codec[Timestamp] = uint32
 
-final case class Node(nodeId: NodeId, timestamp: Timestamp, blacklisted: Boolean)
+final case class Node(
+    nodeId: NodeId,
+    timestamp: Timestamp,
+    blacklisted: Boolean
+)
 final case class Channel(
     shortChannelId: ShortChannelId,
     node1: NodeId,

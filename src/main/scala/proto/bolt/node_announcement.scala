@@ -35,7 +35,7 @@ val validateSignature: Val[Has[Secp256k1], Nothing, NodeAnnouncement] =
 
 val validatePreviousChannel: Val[Has[P2P], Throwable, NodeAnnouncement] =
   validate(
-    ctx => {
+    ctx =>
       val chan =
         predicateM(findChannels(ctx.message.nodeId))(
           _.nonEmpty,
@@ -49,8 +49,7 @@ val validatePreviousChannel: Val[Has[P2P], Throwable, NodeAnnouncement] =
           ignore("No known node for node ID found, required at least one.")
         )
 
-      chan.zipWithPar(node)(_ &> _)
-    },
+      chan.zipWithPar(node)(_ &> _),
     split("if") & field("node_id") & split(
       "is NOT previously known from a"
     ) & field("channel_announcement") & split("message, OR if") & field(

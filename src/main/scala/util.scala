@@ -14,12 +14,12 @@ import zio.{Chunk, ZRef}
   * not be satisfied.
   *
   * ### Example
-  * 
+  *
   * ```scala
   * //{
   * import zio.Chunk
   * import zio.stream.*
-  * 
+  *
   * //}
   * val s: UStream[Chunk[Int]] =
   *   ZStream

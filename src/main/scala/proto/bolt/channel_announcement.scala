@@ -19,7 +19,7 @@ import perun.net.rpc.*
 // <<Channel announcement signatures>>
 val validateSignatures: Val[Has[Secp256k1], Nothing, ChannelAnnouncement] =
   validate(
-    ctx => {
+    ctx =>
       val hash = doubleSHA256(ctx.bytes.drop(2 + 256))
       val ann = ctx.message
       predicateM(
@@ -29,8 +29,7 @@ val validateSignatures: Val[Has[Secp256k1], Nothing, ChannelAnnouncement] =
           verifySignature(ann.bitcoinSignature1, hash, ann.bitcoinKey1),
           verifySignature(ann.bitcoinSignature2, hash, ann.bitcoinKey2)
         ).tupleN
-      )(_ && _ && _ && _, ann, failConnection("Signatures are invalid."))
-    },
+      )(_ && _ && _ && _, ann, failConnection("Signatures are invalid.")),
     text("if") & field("bitcoin_signature_1") + comma & field(
       "bitcoin_signature_2"
     ) + comma & field("node_signature_1") & text("OR") & field(

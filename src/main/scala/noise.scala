@@ -1,7 +1,7 @@
 package noise
 
 import org.bitcoins.crypto.CryptoUtil.sha256
-import org.bitcoins.crypto.*
+import org.bitcoins.crypto.ECPublicKey
 import org.bouncycastle.crypto.digests.SHA256Digest
 import org.bouncycastle.crypto.macs.HMac
 import org.bouncycastle.crypto.params.KeyParameter
