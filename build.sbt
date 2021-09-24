@@ -28,8 +28,9 @@ ThisBuild / scalafixDependencies ++= List(
 
 libraryDependencies ++= List(
   "dev.zio" %% "zio" % zioVersion,
+  "dev.zio" %% "zio-config" % "1.0.10",
   "dev.zio" %% "zio-streams" % zioVersion,
-//  "dev.zio" % "zio-logging_3.0.0-RC3" % "0.5.8",
+  "dev.zio" %% "zio-logging" % "0.5.12",
 //  "dev.zio" % "zio-nio" % "1.0.0-RC10",
   "dev.zio" %% "zio-prelude" % "1.0.0-RC6",
   "dev.zio" %% "zio-test" % zioVersion % Test,
@@ -37,7 +38,7 @@ libraryDependencies ++= List(
   "dev.zio" %% "zio-test-magnolia" % zioVersion % Test,
   "dev.zio" %% "zio-test-refined" % zioVersion % Test,
   "dev.zio" %% "zio-json" % "0.2.0-M1+24-eaa49129-SNAPSHOT",
-  //"nl.vroste" %% "rezilience" % "0.6.0+29-1ae49682+20210511-0646-SNAPSHOT",
+  "nl.vroste" %% "rezilience" % "0.6.2",
   // "org.bitcoin-s" % "bitcoin-s-core_2.13" % "0.6.0",
   "org.bitcoin-s" % "bitcoin-s-core_2.13" % "1.7.0" excludeAll ("org.scodec"),
   "org.bitcoin-s" % "bitcoin-s-crypto_2.13" % "1.7.0" excludeAll ("org.scodec"),
