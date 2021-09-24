@@ -61,8 +61,8 @@ libraryDependencies ++= List(
   "com.softwaremill.sttp.client3" %% "circe" % "3.3.14",
   "org.zeromq" % "jeromq" % "0.5.2",
   "dev.optics" %% "monocle-core" % "3.1.0",
-  "org.typelevel" %% "cats-parse" % "0.3.4"
-
+  "org.typelevel" %% "cats-parse" % "0.3.4",
+  "dnsjava" % "dnsjava" % "3.4.2"
   // "org.parboiled" % "parboiled_2.13" % "2.3.0" // not available for Scala3 yet
 )
 
