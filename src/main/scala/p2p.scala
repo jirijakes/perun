@@ -28,6 +28,11 @@ final case class Channel(
     node2: NodeId
 )
 
+opaque type Point = PublicKey
+
+object Point:
+  val codec: Codec[Point] = perun.crypto.PublicKey.codec
+
 opaque type NodeId = PublicKey
 
 extension (id: NodeId)

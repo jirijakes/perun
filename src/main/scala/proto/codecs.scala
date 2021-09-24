@@ -49,6 +49,7 @@ val error: Codec[Error] =
 
 export perun.p2p.Alias.codec as alias
 export perun.p2p.NodeId.codec as nodeId
+export perun.p2p.Point.codec as point
 export perun.p2p.ShortChannelId.codec as shortChannelId
 export perun.p2p.ShortChannelId.codecEncoded as encodedShortIds
 export perun.p2p.Timestamp.codec as timestamp
@@ -91,8 +92,10 @@ case class Color(r: Byte, g: Byte, b: Byte):
 val color: Codec[Color] = (byte :: byte :: byte).as[Color]
 
 opaque type Msat = BigInt
-
 val msat: Codec[Msat] = uint64.uint64
+
+opaque type Sat = BigInt
+val sat: Codec[Sat] = uint64.uint64
 
 // export UInt64.uint64
 // export UInt64.bigsize
