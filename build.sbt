@@ -1,6 +1,6 @@
 name := "lnz"
 
-scalaVersion := "3.1.0-RC2"
+scalaVersion := "3.1.0-RC3"
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt Test/scalafmt")
 addCommandAlias("fix", "all Compile/scalafix Test/scalafix")
@@ -38,7 +38,7 @@ libraryDependencies ++= List(
   "dev.zio" %% "zio-test-magnolia" % zioVersion % Test,
   "dev.zio" %% "zio-test-refined" % zioVersion % Test,
   "dev.zio" %% "zio-json" % "0.2.0-M1+24-eaa49129-SNAPSHOT",
-  "nl.vroste" %% "rezilience" % "0.6.2",
+  "nl.vroste" %% "rezilience" % "0.7.0",
   // "org.bitcoin-s" % "bitcoin-s-core_2.13" % "0.6.0",
   "org.bitcoin-s" % "bitcoin-s-core_2.13" % "1.7.0" excludeAll ("org.scodec"),
   "org.bitcoin-s" % "bitcoin-s-crypto_2.13" % "1.7.0" excludeAll ("org.scodec"),
@@ -47,7 +47,7 @@ libraryDependencies ++= List(
   // "fr.acinq.secp256k1" % "secp256k1-kmp-jni-jvm" % "0.5.1",
   "com.softwaremill.quicklens" %% "quicklens" % "1.7.4",
   // "org.scodec" %% "scodec-core" % "2.0.0-SNAPSHOT",
-  "org.scodec" %% "scodec-bits" % "1.1.28",
+  "org.scodec" %% "scodec-bits" % "1.1.29",
   "org.hsqldb" % "hsqldb" % "2.6.0",
   "com.lihaoyi" %% "fansi" % "0.2.14",
   // "com.orientechnologies" % "orientdb-graphdb" % "3.2.0",
@@ -58,8 +58,8 @@ libraryDependencies ++= List(
   "io.circe" %% "circe-parser" % "0.14.1",
   "net.java.dev.jna" % "jna" % "5.9.0",
   "io.d11" %% "zhttp" % "1.0.0.0-RC17",
-  "com.softwaremill.sttp.client3" %% "httpclient-backend-zio" % "3.3.14",
-  "com.softwaremill.sttp.client3" %% "circe" % "3.3.14",
+  "com.softwaremill.sttp.client3" %% "httpclient-backend-zio" % "3.3.15",
+  "com.softwaremill.sttp.client3" %% "circe" % "3.3.15",
   "org.zeromq" % "jeromq" % "0.5.2",
   "dev.optics" %% "monocle-core" % "3.1.0",
   "org.typelevel" %% "cats-parse" % "0.3.4",
