@@ -79,7 +79,7 @@ inline def predicateM[R, E, A0, A](m: ZIO[R, E, A0])(
 def validatePreviousChannel(
     ann: NodeAnnouncement,
     b: ByteVector
-): ZIO[Has[P2P], Throwable, Validation[Invalid, NodeAnnouncement]] =
+): ZIO[P2P, Throwable, Validation[Invalid, NodeAnnouncement]] =
   val x = predicateM(findChannels(ann.nodeId))(_.nonEmpty, ann, ignore(""))
   val y = predicateM(findNode(ann.nodeId))(
     _.exists(_.timestamp < ann.timestamp),
@@ -92,7 +92,7 @@ def validatePreviousChannel(
 def validateSignature(
     ann: NodeAnnouncement,
     b: ByteVector
-): URIO[Has[Secp256k1], Validation[Invalid, NodeAnnouncement]] =
+): URIO[Secp256k1, Validation[Invalid, NodeAnnouncement]] =
   predicateM(
     verifySignature(
       ann.signature,
@@ -103,7 +103,7 @@ def validateSignature(
 
 def vvv(
     s: String
-)(in: String, b: ByteVector): UIO[Validation[Invalid, String]] = UIO(
+)(in: String, b: ByteVector): UIO[Validation[Invalid, String]] = ZIO.succeed(
   ignore("Hovno " + s)
 ) //UIO(accept(s))
 
@@ -132,7 +132,7 @@ def aaa: Bolt[Any, Nothing, String] =
     )
   )
 
-def bbb: Bolt[Has[P2P] & Has[Secp256k1], Throwable, NodeAnnouncement] =
+def bbb: Bolt[P2P & Secp256k1, Throwable, NodeAnnouncement] =
   import Doc.*
 
   bolt("#7", "Node announcement")(
@@ -162,11 +162,11 @@ object Pokus extends App:
   def run(args: List[String]) = aaa
     .validate("", ByteVector.empty)
     // .either
-    .flatMap(x => console.putStrLn(x.toString))
+    .flatMap(x => Console.printLine(x.toString))
     .exitCode
 
-  def run2(args: List[String]) = console
-    .putStrLn(
+  def run2(args: List[String]) = Console
+    .printLine(
       (text("if") & field("signature") & split(
         "is NOT a valid signature (using"
       ) & field("node_id") & split(

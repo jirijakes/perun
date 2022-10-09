@@ -12,7 +12,7 @@ import perun.proto.bolt.doc.*
 import perun.proto.gossip.NodeAnnouncement
 import perun.db.p2p.*
 
-val validateSignature: Val[Has[Secp256k1], Nothing, NodeAnnouncement] =
+val validateSignature: Val[Secp256k1, Nothing, NodeAnnouncement] =
   validate(
     ctx =>
       predicateM(
@@ -33,7 +33,7 @@ val validateSignature: Val[Has[Secp256k1], Nothing, NodeAnnouncement] =
         text("MUST NOT process the message further.")).indent(3)
   )
 
-val validatePreviousChannel: Val[Has[P2P], Throwable, NodeAnnouncement] =
+val validatePreviousChannel: Val[P2P, Throwable, NodeAnnouncement] =
   validate(
     ctx =>
       val chan =
@@ -61,7 +61,7 @@ val validatePreviousChannel: Val[Has[P2P], Throwable, NodeAnnouncement] =
     ).indent(3)
   )
 
-val validation: Bolt[Has[P2P] & Has[Secp256k1], Throwable, NodeAnnouncement] =
+val validation: Bolt[P2P & Secp256k1, Throwable, NodeAnnouncement] =
   bolt("#7", "Node announcement")(
     validateSignature,
     validatePreviousChannel

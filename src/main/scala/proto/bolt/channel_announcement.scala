@@ -17,7 +17,7 @@ import perun.p2p.*
 import perun.net.rpc.*
 
 // <<Channel announcement signatures>>
-val validateSignatures: Val[Has[Secp256k1], Nothing, ChannelAnnouncement] =
+val validateSignatures: Val[Secp256k1, Nothing, ChannelAnnouncement] =
   validate(
     ctx =>
       val hash = doubleSHA256(ctx.bytes.drop(2 + 256))
@@ -54,7 +54,7 @@ val validateChain: Val[Any, Nothing, ChannelAnnouncement] =
   )
 
 // <<Channel announcement tx output>>
-val validateTxOutput: Val[Has[Rpc], Throwable, ChannelAnnouncement] =
+val validateTxOutput: Val[Rpc, Throwable, ChannelAnnouncement] =
   validate(
     ctx =>
       predicateM(txout(ctx.message.shortChannelId))(
@@ -82,7 +82,7 @@ val validateTxOutput: Val[Has[Rpc], Throwable, ChannelAnnouncement] =
   )
 
 // <<Channel announcement blacklisted node>>
-val validateNodes: Val[Has[P2P], Throwable, ChannelAnnouncement] =
+val validateNodes: Val[P2P, Throwable, ChannelAnnouncement] =
   validate(
     ctx =>
       predicateM(
@@ -98,8 +98,7 @@ val validateNodes: Val[Has[P2P], Throwable, ChannelAnnouncement] =
   )
 
 // <<Channel announcement previous announcement>>
-val validatePreviousAnnouncement
-    : Val[Has[P2P], Throwable, ChannelAnnouncement] =
+val validatePreviousAnnouncement: Val[P2P, Throwable, ChannelAnnouncement] =
   validate(
     ctx =>
       predicateMF(findChannel(ctx.message.shortChannelId))(
@@ -138,9 +137,7 @@ val validatePreviousAnnouncement
     )).indent(3)
   )
 
-val validation: Bolt[Has[
-  Secp256k1
-] & Has[Rpc] & Has[P2P], Throwable, ChannelAnnouncement] =
+val validation: Bolt[Secp256k1 & Rpc & P2P, Throwable, ChannelAnnouncement] =
   bolt("#7", "Channel announcement")(
     validateChain,
     validateTxOutput,

@@ -28,95 +28,100 @@ def verifySignature(
     s: Signature,
     h: HashDigest,
     k: NodeId | PublicKey
-): URIO[Has[Secp256k1], Boolean] = ZIO.access(_.get.verify(s, h, k))
+): URIO[Secp256k1, Boolean] = ZIO.serviceWith[Secp256k1](_.verify(s, h, k))
 
 def signMessage(
     sec: PrivateKey,
     h: HashDigest
-): URIO[Has[Secp256k1], Signature] = ZIO.access(_.get.sign(sec, h))
+): URIO[Secp256k1, Signature] = ZIO.serviceWith[Secp256k1](_.sign(sec, h))
 
-def native: ZLayer[Any, Error, Has[Secp256k1]] =
-  ZManaged
-    .make(
-      for
-        lib <- Task(Native.load("secp256k1", classOf[unsafe.Secp256k1]))
-          .refineOrDie { case _: UnsatisfiedLinkError => Error.LibraryNotFound }
-        ctx <- Task(
-          lib.secp256k1_context_create(
-            unsafe.flagSign | unsafe.flagVerify
-          )
-        )
-          .refineOrDie { case x => Error.CouldNotInitialize }
-      // cb = new lib.OnError:
-      // def invoke(message: String, data: Pointer) =
-      // println(">>>>>>>> " + message)
-      // _ <- Task(
-      // lib.secp256k1_context_set_illegal_callback(ctx, cb, Pointer.NULL)
-      // ).orDie
-      yield (ctx, lib)
-    )((ctx, lib) => Task(lib.secp256k1_context_destroy(ctx)).ignore)
-    .map { (ctx, lib) =>
-      new Secp256k1:
-        def ecdh(sec: PrivateKey, pub: PublicKey): ByteVector =
-          val key = unsafe.Pubkey.allocate
-          val keyr = lib.secp256k1_ec_pubkey_parse(
-            ctx,
-            key,
-            pub.publicKeyToBytes.toArray,
-            pub.byteSize.toInt
-          )
-          val out = Array.ofDim[Byte](32)
-          val res = lib.secp256k1_ecdh(
-            ctx,
-            out,
-            key,
-            sec.secretKeyToBytes.toArray,
-            Pointer.NULL,
-            Pointer.NULL
-          )
-          ByteVector.view(out)
-        def sign(sec: PrivateKey, h: HashDigest): Signature =
-          val sig = unsafe.Signature.allocate
-          val resr = lib.secp256k1_ecdsa_sign(
-            ctx,
-            sig,
-            h.bytes.toArray,
-            sec.secretKeyToBytes.toArray,
-            Pointer.NULL,
-            Pointer.NULL
-          )
-          val out = Array.ofDim[Byte](64)
-          val com =
-            lib.secp256k1_ecdsa_signature_serialize_compact(ctx, out, sig)
-          Signature.fromBytes(ByteVector.view(out))
-        def verify(
-            s: Signature,
-            h: HashDigest,
-            k: NodeId | PublicKey
-        ): Boolean =
-          val sig = unsafe.Signature.allocate
-          val sigr = lib.secp256k1_ecdsa_signature_parse_compact(
-            ctx,
-            sig,
-            s.signatureToBytes.toArray
-          )
-          val key = unsafe.Pubkey.allocate
-          val keyr = lib.secp256k1_ec_pubkey_parse(
-            ctx,
-            key,
-            k match
-              // case n: NodeId    => n.nodeIdAsPublicKey.bytes.toArray
-              case p: PublicKey => p.publicKeyToBytes.toArray
-            ,
-            k match
-              // case n: NodeId    => n.nodeIdAsPublicKey.byteSize.toInt
-              case p: PublicKey => p.publicKeyToBytes.size.toInt
-          )
-          val verr = lib.secp256k1_ecdsa_verify(ctx, sig, h.bytes.toArray, key)
-          verr == 1
+case class NativeSecp256k1(lib: unsafe.Secp256k1, ctx: unsafe.Context)
+    extends Secp256k1:
+  def ecdh(sec: PrivateKey, pub: PublicKey): ByteVector =
+    val key = unsafe.Pubkey.allocate
+    val keyr = lib.secp256k1_ec_pubkey_parse(
+      ctx,
+      key,
+      pub.publicKeyToBytes.toArray,
+      pub.byteSize.toInt
+    )
+    val out = Array.ofDim[Byte](32)
+    val res = lib.secp256k1_ecdh(
+      ctx,
+      out,
+      key,
+      sec.secretKeyToBytes.toArray,
+      Pointer.NULL,
+      Pointer.NULL
+    )
+    ByteVector.view(out)
+  def sign(sec: PrivateKey, h: HashDigest): Signature =
+    val sig = unsafe.Signature.allocate
+    val resr = lib.secp256k1_ecdsa_sign(
+      ctx,
+      sig,
+      h.bytes.toArray,
+      sec.secretKeyToBytes.toArray,
+      Pointer.NULL,
+      Pointer.NULL
+    )
+    val out = Array.ofDim[Byte](64)
+    val com =
+      lib.secp256k1_ecdsa_signature_serialize_compact(ctx, out, sig)
+    Signature.fromBytes(ByteVector.view(out))
+  def verify(
+      s: Signature,
+      h: HashDigest,
+      k: NodeId | PublicKey
+  ): Boolean =
+    val sig = unsafe.Signature.allocate
+    val sigr = lib.secp256k1_ecdsa_signature_parse_compact(
+      ctx,
+      sig,
+      s.signatureToBytes.toArray
+    )
+    val key = unsafe.Pubkey.allocate
+    val keyr = lib.secp256k1_ec_pubkey_parse(
+      ctx,
+      key,
+      k match
+        // case n: NodeId    => n.nodeIdAsPublicKey.bytes.toArray
+        case p: PublicKey => p.publicKeyToBytes.toArray
+      ,
+      k match
+        // case n: NodeId    => n.nodeIdAsPublicKey.byteSize.toInt
+        case p: PublicKey => p.publicKeyToBytes.size.toInt
+    )
+    val verr = lib.secp256k1_ecdsa_verify(ctx, sig, h.bytes.toArray, key)
+    verr == 1
 
-    }
-    .toLayer
+def native: ZLayer[Any, Error, Secp256k1] =
+  ZLayer.scoped {
+    ZIO
+      .acquireRelease(
+        for
+          lib <- ZIO
+            .attempt(Native.load("secp256k1", classOf[unsafe.Secp256k1]))
+            .refineOrDie { case _: UnsatisfiedLinkError =>
+              Error.LibraryNotFound
+            }
+          ctx <- ZIO
+            .attempt(
+              lib.secp256k1_context_create(
+                unsafe.flagSign | unsafe.flagVerify
+              )
+            )
+            .refineOrDie { case x => Error.CouldNotInitialize }
+        // cb = new lib.OnError:
+        // def invoke(message: String, data: Pointer) =
+        // println(">>>>>>>> " + message)
+        // _ <- Task(
+        // lib.secp256k1_context_set_illegal_callback(ctx, cb, Pointer.NULL)
+        // ).orDie
+        yield (ctx, lib)
+      )((ctx, lib) => ZIO.attempt(lib.secp256k1_context_destroy(ctx)).ignore)
+      .map { (ctx, lib) => NativeSecp256k1(lib, ctx) }
+  }
 
 object unsafe:
 

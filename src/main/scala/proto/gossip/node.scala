@@ -81,43 +81,45 @@ final case class ChannelAnnouncement(
 
   /** Verify validity of signatures.
     */
-  def isValid: URIO[Has[Secp256k1], Boolean] =
-    UIO(
-      nonvalidatingChannelAnnouncement
-        .encode(this)
-        .toOption
-        .map(_.drop(2048).toByteVector)
-    ).flatMap {
-      case None => UIO(false)
-      case Some(msg) =>
-        val hash = sha256(msg)
-        ZIO
-          .collectAll(
-            NonEmptyChunk(
-              verifySignature(
-                this.nodeSignature1,
-                hash,
-                this.nodeId1
-              ),
-              verifySignature(
-                this.nodeSignature2,
-                hash,
-                this.nodeId2
-              ),
-              verifySignature(
-                this.bitcoinSignature1,
-                hash,
-                this.bitcoinKey1
-              ),
-              verifySignature(
-                this.bitcoinSignature2,
-                hash,
-                this.bitcoinKey2
+  def isValid: URIO[Secp256k1, Boolean] =
+    ZIO
+      .succeed(
+        nonvalidatingChannelAnnouncement
+          .encode(this)
+          .toOption
+          .map(_.drop(2048).toByteVector)
+      )
+      .flatMap {
+        case None => ZIO.succeed(false)
+        case Some(msg) =>
+          val hash = sha256(msg)
+          ZIO
+            .collectAll(
+              NonEmptyChunk(
+                verifySignature(
+                  this.nodeSignature1,
+                  hash,
+                  this.nodeId1
+                ),
+                verifySignature(
+                  this.nodeSignature2,
+                  hash,
+                  this.nodeId2
+                ),
+                verifySignature(
+                  this.bitcoinSignature1,
+                  hash,
+                  this.bitcoinKey1
+                ),
+                verifySignature(
+                  this.bitcoinSignature2,
+                  hash,
+                  this.bitcoinKey2
+                )
               )
             )
-          )
-          .map(_.forall(_ == true))
-    }
+            .map(_.forall(_ == true))
+      }
 
   /** Provide signature of this channel announcement using provided
     * secret key. Signing may fail, in that case `None` is returned.
@@ -127,16 +129,19 @@ final case class ChannelAnnouncement(
     */
   def signature(
       sec: PrivateKey
-  ): ZIO[Has[Secp256k1], Option[Nothing], Signature] =
-    UIO(
-      nonvalidatingChannelAnnouncement
-        .encode(this)
-        .toOption
-        .map(_.drop(2048).toByteVector)
-    ).flatMap {
-      case None      => UIO(None)
-      case Some(msg) => signMessage(sec, sha256(msg)).map(Option(_))
-    }.some
+  ): ZIO[Secp256k1, Option[Nothing], Signature] =
+    ZIO
+      .succeed(
+        nonvalidatingChannelAnnouncement
+          .encode(this)
+          .toOption
+          .map(_.drop(2048).toByteVector)
+      )
+      .flatMap {
+        case None      => ZIO.none
+        case Some(msg) => signMessage(sec, sha256(msg)).map(Option(_))
+      }
+      .some
 
   /** Inject all signatures into this channel announcement. The
     * signatures are not verified during this step.

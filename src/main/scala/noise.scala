@@ -213,13 +213,13 @@ final class HandshakeState(
   def nextExpected =
     new HandshakeState(s, e, rs, re, role, patterns, symmetric, expected.tail)
 
-  val aaa: URIO[Has[Keygen], (HandshakeState, ByteVector)] =
-    UIO.succeed((this, ByteVector(0)))
+  val aaa: URIO[Keygen, (HandshakeState, ByteVector)] =
+    ZIO.succeed((this, ByteVector(0)))
 
   def writeMessage(
       payload: ByteVector
-  ): ZIO[Has[Keygen] & Has[Secp256k1], HandshakeError, HandshakeResult] =
-    ZIO.environment[Has[Secp256k1]].map(_.get).flatMap { secp =>
+  ): ZIO[Keygen & Secp256k1, HandshakeError, HandshakeResult] =
+    ZIO.environment[Secp256k1].map(_.get).flatMap { secp =>
       patterns.headOption match
         case None => ???
         case Some(tokens) =>
@@ -288,13 +288,13 @@ final class HandshakeState(
 
   def readMessage(
       message: ByteVector
-  ): ZIO[Has[Secp256k1], HandshakeError, HandshakeResult] =
+  ): ZIO[Secp256k1, HandshakeError, HandshakeResult] =
     val (v, (c, t)) =
       (message.head, message.tail.splitAt(message.tail.length - 16))
     patterns.headOption match
       case None => ???
       case Some(tokens) =>
-        ZIO.environment[Has[Secp256k1]].map(_.get).flatMap { secp =>
+        ZIO.environment[Secp256k1].map(_.get).flatMap { secp =>
           val hs = tokens.foldLeft[Either[DecryptionError, HandshakeState]](
             Right(this)
           ) {
@@ -321,7 +321,7 @@ final class HandshakeState(
           }
           hs.flatMap(_.decryptAndHash(t)) match
             case Right((plaintext, nextHs)) =>
-              UIO.succeed {
+              ZIO.succeed {
                 nextHs.nextPattern match
                   case None =>
                     val (c1, c2) = nextHs.symmetric.split
@@ -331,7 +331,7 @@ final class HandshakeState(
               }
 
             case Left(DecryptionError.BadTag) =>
-              IO.fail(HandshakeError.InvalidCiphertext)
+              ZIO.fail(HandshakeError.InvalidCiphertext)
         }
 
 object HandshakeState:

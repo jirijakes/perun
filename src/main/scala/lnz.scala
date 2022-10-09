@@ -1,7 +1,7 @@
 import scodec.bits.*
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio.*
-import zio.console.*
+import zio.Console.*
 import zio.stream.*
 
 object lnz extends App:
@@ -91,10 +91,9 @@ object lnz extends App:
       .collect("BOOOM") { case (Left(m), Some(n)) => (m, n) }
 
   val dep: ZLayer[
-    zio.blocking.Blocking,
+    Any,
     Nothing,
-    Has[Secp256k1] & Has[Rpc] & Has[P2P] &
-      Has[Keygen] & Has[perun.db.store.Store]
+    Secp256k1 & Rpc & P2P & Keygen & perun.db.store.Store
   ] =
     perun.crypto.keygen.liveKeygen ++
       store.live("jdbc:hsqldb:file:testdb").orDie ++
@@ -109,7 +108,7 @@ object lnz extends App:
       ) ++
       native.mapError(e => new Exception(e.toString)).orDie
 
-  def run(args: List[String]): URIO[ZEnv, ExitCode] =
+  def run(args: List[String]): URIO[String, ExitCode] =
     ZStream
       .fromSocketServer(9977, None)
       .foreach { c =>
@@ -128,8 +127,8 @@ object lnz extends App:
               .fork
           }
       }
-      .onInterrupt(ZIO.effectTotal(println("DOOONE")))
-      .provideCustomLayer(dep)
+      .onInterrupt(ZIO.succeedBlocking(println("DOOONE")))
+      .provide(dep)
       .exitCode
 
 end lnz

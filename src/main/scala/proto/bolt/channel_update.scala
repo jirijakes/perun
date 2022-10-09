@@ -10,7 +10,7 @@ import perun.proto.bolt.doc.*
 import perun.proto.gossip.ChannelUpdate
 import perun.db.p2p.*
 
-val validatePreviousChannel: Val[Has[P2P], Throwable, ChannelUpdate] =
+val validatePreviousChannel: Val[P2P, Throwable, ChannelUpdate] =
   validate(
     ctx =>
       predicateM(findChannel(ctx.message.shortChannelId))(
@@ -27,7 +27,7 @@ val validatePreviousChannel: Val[Has[P2P], Throwable, ChannelUpdate] =
     )).indent(3)
   )
 
-val validation: Bolt[Has[P2P], Throwable, ChannelUpdate] =
+val validation: Bolt[P2P, Throwable, ChannelUpdate] =
   bolt("#7", "Channel update")(
     validatePreviousChannel
   )

@@ -5,7 +5,7 @@ import org.bitcoins.crypto.CryptoUtil.{doubleSHA256, sha256}
 import org.typelevel.paiges.*
 import scodec.bits.ByteVector
 import zio.*
-import zio.console.*
+import zio.Console.*
 import zio.prelude.*
 import zio.stream.*
 
@@ -203,7 +203,7 @@ inline def predicateMF[R, E, A0, A](m: ZIO[R, E, A0])(
 def validate(conf: perun.peer.Configuration)(
     bytes: ByteVector,
     message: Message
-): ZIO[Has[P2P] & Has[Secp256k1] & Console & Has[Rpc], Throwable, ZValidation[
+): ZIO[P2P & Secp256k1 & Console & Rpc, Throwable, ZValidation[
   Step,
   Invalid,
   Message
@@ -220,7 +220,7 @@ def validate(conf: perun.peer.Configuration)(
     case Message.ChannelUpdate(m) =>
       react(channelUpdate.validation, bytes, m, conf)
         .map(_.map(Message.ChannelUpdate.apply))
-    case m => UIO.succeed(Validation.succeed(m))
+    case m => ZIO.succeed(Validation.succeed(m))
 
 def react[R, E, A](
     bolt: Bolt[R, E, A],
@@ -232,9 +232,11 @@ def react[R, E, A](
   bolt
     .validate(message, bytes, conf)
     .tap { result =>
-      putStrLn(s">>>>>>>>>> ${bolt.number} ${bolt.name} <<<<<<<<<<\n").ignore *>
+      printLine(
+        s">>>>>>>>>> ${bolt.number} ${bolt.name} <<<<<<<<<<\n"
+      ).ignore *>
         ZIO.foreach(result.getLog)(step =>
-          putStrLn(step.doc.render(120)).ignore
+          printLine(step.doc.render(120)).ignore
         ) *>
-        putStrLn("---------------------").ignore
+        printLine("---------------------").ignore
     }

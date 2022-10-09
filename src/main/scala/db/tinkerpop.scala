@@ -25,8 +25,8 @@ import perun.proto.codecs.*
 import perun.proto.gossip.{ChannelAnnouncement, NodeAnnouncement}
 import scala.reflect.ClassTag
 
-def gremlin: ZLayer[Has[GraphTraversalSource], Nothing, Has[P2P]] =
-  Gremlin.apply.toLayer
+def gremlin: ZLayer[GraphTraversalSource, Nothing, P2P] =
+  ZLayer.fromFunction(Gremlin.apply)
 
 def cast[T: ClassTag](v: Any): Option[T] =
   v match
@@ -35,18 +35,21 @@ def cast[T: ClassTag](v: Any): Option[T] =
 
 /** Layer for creating an in-memory Tinkergraph database suitable for Gremlin.
   */
-def tinkergraph: ULayer[Has[GraphTraversalSource]] =
-  ZManaged
-    .make(
-      UIO(traversal().withEmbedded(TinkerGraph.open())).tap(g =>
-        ZIO.effectTotal(g.io("init.xml").read().iterate())
+def tinkergraph: ULayer[GraphTraversalSource] =
+  ZLayer.scoped {
+    ZIO
+      .acquireRelease(
+        ZIO
+          .succeed(traversal().withEmbedded(TinkerGraph.open()))
+          .tap(g => ZIO.succeedBlocking(g.io("init.xml").read().iterate()))
+      )(g =>
+        ZIO.succeed(g.io("graf.xml").write().iterate()) *> ZIO.succeed(
+          println("KONEC")
+        ) *> ZIO.succeed(
+          g.close()
+        )
       )
-    )(g =>
-      (IO(g.io("graf.xml").write().iterate()) *> IO(println("KONEC")) *> IO(
-        g.close()
-      )).orDie
-    )
-    .toLayer
+  }
 
 final case class Gremlin(g: GraphTraversalSource) extends P2P:
   def findNode(nodeId: NodeId): Task[Option[Node]] =
@@ -79,7 +82,7 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
         .headOption
         .flatten
 
-    UIO.succeed(node)
+    ZIO.succeed(node)
 
   def findChannels(nodeId: NodeId): Task[List[Channel]] =
     val res = g
@@ -97,16 +100,16 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
         .map { p =>
           val m = p.asScala.toMap[String, Any]
           for
-            (f: String) <- m.get("from")
-            (t: String) <- m.get("to")
-            (i: String) <- m.get("shortChannelId")
+            case f: String <- m.get("from")
+            case t: String <- m.get("to")
+            case i: String <- m.get("shortChannelId")
             id <- ShortChannelId.fromString(i)
           yield Channel(id, NodeId.fromHex(f), NodeId.fromHex(t))
         }
         .toList
         .collect { case Some(c) => c }
 
-    UIO.succeed(channels)
+    ZIO.succeed(channels)
 
   def findChannel(shortChannelId: ShortChannelId): Task[Option[Channel]] =
     val res = g
@@ -133,7 +136,7 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
         .headOption
         .flatten
 
-    UIO(channel)
+    ZIO.succeed(channel)
 
   def offerChannel(c: ChannelAnnouncement): Task[Unit] =
     val n1 = getOrCreateNode(c.nodeId1)
@@ -143,7 +146,7 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
       .from(n1)
       .to(n2)
       .property("shortChannelId", c.shortChannelId.toString)
-    Task(ch.next()).unit
+    ZIO.attempt(ch.next()).unit
 
   // TODO: Per specification, we should ignore node announcements for unknown channels
   // but we store everything now. In the future, it should be configurable.
@@ -160,7 +163,8 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
       .property("alias", n.alias.asText.getOrElse(""))
       .property("timestamp", n.timestamp)
     // println(">>> " + n1)
-    Task(n1.next())
+    ZIO
+      .attempt(n1.next())
       // .tapCause(e => Task(println("######> " + e.prettyPrint)))
       .unit
 

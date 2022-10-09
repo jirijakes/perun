@@ -14,21 +14,21 @@ trait P2P:
 
 object P2P:
   import perun.db.tinkerpop.*
-  def inMemory: ULayer[Has[P2P]] = tinkergraph >>> gremlin
+  def inMemory: ULayer[P2P] = tinkergraph >>> gremlin
 
-def offerNode(n: NodeAnnouncement): ZIO[Has[P2P], Throwable, Unit] =
+def offerNode(n: NodeAnnouncement): ZIO[P2P, Throwable, Unit] =
   ZIO.serviceWith(_.offerNode(n))
 
-def offerChannel(c: ChannelAnnouncement): ZIO[Has[P2P], Throwable, Unit] =
+def offerChannel(c: ChannelAnnouncement): ZIO[P2P, Throwable, Unit] =
   ZIO.serviceWith(_.offerChannel(c))
 
 def findChannel(
     shortChannelId: ShortChannelId
-): ZIO[Has[P2P], Throwable, Option[Channel]] =
-  ZIO.serviceWith(_.findChannel(shortChannelId))
+): ZIO[P2P, Throwable, Option[Channel]] =
+  ZIO.serviceWithZIO(_.findChannel(shortChannelId))
 
-def findChannels(nodeId: NodeId): ZIO[Has[P2P], Throwable, List[Channel]] =
-  ZIO.serviceWith(_.findChannels(nodeId))
+def findChannels(nodeId: NodeId): ZIO[P2P, Throwable, List[Channel]] =
+  ZIO.serviceWithZIO(_.findChannels(nodeId))
 
-def findNode(nodeId: NodeId): ZIO[Has[P2P], Throwable, Option[Node]] =
-  ZIO.serviceWith(_.findNode(nodeId))
+def findNode(nodeId: NodeId): ZIO[P2P, Throwable, Option[Node]] =
+  ZIO.serviceWithZIO(_.findNode(nodeId))

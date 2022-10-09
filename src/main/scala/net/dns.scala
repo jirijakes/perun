@@ -20,19 +20,18 @@ final case class DnsJava(session: LookupSession) extends Dns:
       .fromCompletionStage(session.lookupAsync(Name.fromString(s), Type.SRV))
       .map(a =>
         a.getRecords.asScala
-          .collect {
-            case r: SRVRecord => r.toString
-          }
+          .collect { case r: SRVRecord => r.toString }
           .mkString("\n")
       )
 
-val live: ZLayer[Any, Nothing, Has[Dns]] =
+val live: ZLayer[Any, Nothing, Dns] =
   ZLayer.succeed(DnsJava(LookupSession.defaultBuilder.build))
 
 def lookup(s: String) = ZIO.serviceWith[Dns](_.lookup(s))
 
-object DDD extends zio.App:
-  def run(r: List[String]) = lookup("nodes.lightning.directory")
-    .flatMap(r => zio.console.putStrLn(r))
-    .provideCustomLayer(live)
-    .exitCode
+object DDD extends ZIOApp:
+  def run(r: List[String]) =
+    lookup("nodes.lightning.directory")
+      .flatMap(r => zio.Console.printLine(r))
+      .provide(live)
+      .exitCode

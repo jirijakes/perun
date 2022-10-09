@@ -23,7 +23,7 @@ enum Message:
   case FundingLocked(m: channel.FundingLocked)
   case Shutdown(m: channel.Shutdown)
   case ClosingSigned(m: channel.ClosingSigned)
-  case UpdateAddHtlc(m: channel.UpdateAddHtlc)
+  // case UpdateAddHtlc(m: channel.UpdateAddHtlc)
 
 import Message.*
 
@@ -40,7 +40,7 @@ val messageCodec: Codec[Message] = discriminated[Message].by(uint16)
   .caseP(36)  { case FundingLocked(m)         => m }(FundingLocked.apply         )(channel.fundingLocked       )
   .caseP(38)  { case Shutdown(m)              => m }(Shutdown.apply              )(channel.shutdown            )
   .caseP(39)  { case ClosingSigned(m)         => m }(ClosingSigned.apply         )(channel.closingSigned       )
-  .caseP(128) { case UpdateAddHtlc(m)         => m }(UpdateAddHtlc.apply         )(channel.updateAddHtlc       )
+  // .caseP(128) { case UpdateAddHtlc(m)         => m }(UpdateAddHtlc.apply         )(channel.updateAddHtlc       )
 
   .caseP(256) { case ChannelAnnouncement(m)   => m }(ChannelAnnouncement.apply   )(gossip.channelAnnouncement  )
   .caseP(257) { case NodeAnnouncement(m)      => m }(NodeAnnouncement.apply      )(gossip.nodeAnnouncement     )

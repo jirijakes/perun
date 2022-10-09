@@ -8,9 +8,9 @@ import scodec.bits.{hex, *}
 import scodec.codecs.uint16
 import org.typelevel.paiges.Document.ops.*
 import zio.*
-import zio.clock.Clock
-import zio.console.*
-import zio.duration.*
+import zio.Clock
+import zio.Console.*
+import zio.Duration.*
 import zio.stream.*
 
 import perun.crypto.secp256k1.Secp256k1
@@ -45,7 +45,7 @@ def start(
     sk: CipherState
 ): ZIO[
   // Has[Store] &
-  Clock & Console & Has[P2P] & Has[Secp256k1] & Has[Rpc],
+  Clock & Console & P2P & Secp256k1 & Rpc,
   Nothing,
   Unit
 ] =
@@ -125,11 +125,11 @@ def start(
     // )
     // .fork
     // _ <- (ZIO.sleep(3.second) *> hw
-      // .publish(
-        // Message.GossipTimestampFilter(
-          // GossipTimestampFilter(Chain.Testnet, 0L, 4294967295L)
-        // )
-      // )).fork
+    // .publish(
+    // Message.GossipTimestampFilter(
+    // GossipTimestampFilter(Chain.Testnet, 0L, 4294967295L)
+    // )
+    // )).fork
     // _ <- perun.proto.ping.schedule(hr, hw).fork
     _ <- ZIO.never
   yield ()

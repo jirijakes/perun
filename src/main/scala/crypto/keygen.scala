@@ -23,7 +23,7 @@ trait Keygen:
   *     .exitCode
   * ```
   */
-val liveKeygen: ULayer[Has[Keygen]] =
+val liveKeygen: ULayer[Keygen] =
   ZLayer.succeed(
     new Keygen:
       def generateKeypair: UIO[PrivateKey] = PrivateKey.freshPrivateKey
@@ -47,20 +47,21 @@ val liveKeygen: ULayer[Has[Keygen]] =
   *     .exitCode
   * ```
   */
-def repeat(key0: String, other: String*): ULayer[Has[Keygen]] =
+def repeat(key0: String, other: String*): ULayer[Keygen] =
   val nel = NonEmptyList.fromIterable(key0, other)
-  Ref
-    .make(nel)
-    .map { ref =>
-      new Keygen:
-        def generateKeypair: UIO[PrivateKey] =
-          ref.modify {
-            case NonEmptyList.Single(h)  => (PrivateKey.fromHex(h), nel)
-            case NonEmptyList.Cons(h, t) => (PrivateKey.fromHex(h), t)
-          }
+  ZLayer {
+    Ref
+      .make(nel)
+      .map { ref =>
+        new Keygen:
+          def generateKeypair: UIO[PrivateKey] =
+            ref.modify {
+              case NonEmptyList.Single(h)  => (PrivateKey.fromHex(h), nel)
+              case NonEmptyList.Cons(h, t) => (PrivateKey.fromHex(h), t)
+            }
 
-    }
-    .toLayer
+      }
+  }
 
-def generateKeypair: URIO[Has[Keygen], PrivateKey] =
-  ZIO.accessM(x => x.get.generateKeypair)
+def generateKeypair: URIO[Keygen, PrivateKey] =
+  ZIO.serviceWithZIO(_.generateKeypair)

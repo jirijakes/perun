@@ -4,9 +4,9 @@ import scodec.*
 import scodec.bits.ByteVector
 import scodec.codecs.*
 import zio.*
-import zio.clock.*
-import zio.console.*
-import zio.duration.*
+import zio.Clock.*
+import zio.Console.*
+import zio.Duration.*
 import zio.stream.*
 
 import perun.proto.{Message, Response}
@@ -61,7 +61,7 @@ val pong: Codec[Pong] =
 
 // TODO: Add generating errors
 def receiveMessage(p: Ping): ZIO[Any, Nothing, Response] =
-  UIO(
+  ZIO.succeed(
     receivePing(p)
       .fold(Response.Ignore)(p => Response.Send(Message.Pong(p)))
   )
@@ -97,7 +97,7 @@ def sendPing(
     .runHead
     .flatMap {
       case Some(pong) => receivePong(ping, pong)
-      case None       => putStrLn("NO PONG")
+      case None       => printLine("NO PONG")
     }
 
   val ping = Ping(128, 256)
@@ -114,7 +114,7 @@ def sendPing(
 // TODO: Change putStrLn into failing channel
 def receivePong(ping: Ping, pong: Pong): ZIO[Console, Nothing, Unit] =
   if ping.num != pong.len then
-    putStrLn(
+    printLine(
       s"Pong did not contain ${ping.num} bytes as expected but ${pong.len}."
     ).orDie
   else ZIO.unit

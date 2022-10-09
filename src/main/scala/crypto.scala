@@ -6,7 +6,7 @@ import org.bitcoins.crypto.{ECDigitalSignature, ECPrivateKey, ECPublicKey}
 import scodec.bits.ByteVector
 import scodec.codecs.bytes
 import scodec.{Attempt, Codec, Err}
-import zio.UIO
+import zio.{UIO, ZIO}
 
 enum DecryptionError:
   case BadTag
@@ -32,7 +32,7 @@ extension (sec: PrivateKey)
 
 object PrivateKey:
   def freshPrivateKey: UIO[PrivateKey] =
-    UIO.effectTotal(ECPrivateKey.freshPrivateKey)
+    ZIO.succeed(ECPrivateKey.freshPrivateKey)
   def fromHex(hex: String): PrivateKey = ECPrivateKey.fromHex(hex)
 
 extension (pub: PublicKey)

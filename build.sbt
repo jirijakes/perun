@@ -1,6 +1,6 @@
 name := "lnz"
 
-scalaVersion := "3.1.0-RC3"
+scalaVersion := "3.2.0"
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt Test/scalafmt")
 addCommandAlias("fix", "all Compile/scalafix Test/scalafix")
@@ -19,7 +19,7 @@ resolvers ++= List(
   Resolver.sonatypeRepo("snapshots")
 )
 
-val zioVersion = "1.0.12"
+val zioVersion = "2.0.2"
 
 ThisBuild / scalafixDependencies ++= List(
   "com.github.liancheng" %% "organize-imports" % "0.5.0",
@@ -28,43 +28,47 @@ ThisBuild / scalafixDependencies ++= List(
 
 libraryDependencies ++= List(
   "dev.zio" %% "zio" % zioVersion,
-  "dev.zio" %% "zio-config" % "1.0.10",
+  "dev.zio" %% "zio-config" % "3.0.2",
   "dev.zio" %% "zio-streams" % zioVersion,
-  "dev.zio" %% "zio-logging" % "0.5.12",
-//  "dev.zio" % "zio-nio" % "1.0.0-RC10",
-  "dev.zio" %% "zio-prelude" % "1.0.0-RC6",
+  "dev.zio" %% "zio-logging" % "2.1.2",
+  "dev.zio" %% "zio-nio" % "2.0.0",
+  "dev.zio" %% "zio-prelude" % "1.0.0-RC16",
   "dev.zio" %% "zio-test" % zioVersion % Test,
   "dev.zio" %% "zio-test-sbt" % zioVersion % Test,
   "dev.zio" %% "zio-test-magnolia" % zioVersion % Test,
   "dev.zio" %% "zio-test-refined" % zioVersion % Test,
-  "dev.zio" %% "zio-json" % "0.2.0-M1+24-eaa49129-SNAPSHOT",
-  "nl.vroste" %% "rezilience" % "0.7.0",
+  "dev.zio" %% "zio-json" % "0.3.0",
+  "nl.vroste" %% "rezilience" % "0.9.0",
   // "org.bitcoin-s" % "bitcoin-s-core_2.13" % "0.6.0",
-  "org.bitcoin-s" % "bitcoin-s-core_2.13" % "1.7.0" excludeAll ("org.scodec"),
-  "org.bitcoin-s" % "bitcoin-s-crypto_2.13" % "1.7.0" excludeAll ("org.scodec"),
+  "org.bitcoin-s" % "bitcoin-s-core_2.13" % "1.9.5" excludeAll ("org.scodec"),
+  "org.bitcoin-s" % "bitcoin-s-crypto_2.13" % "1.9.5" excludeAll ("org.scodec"),
   // "org.bouncycastle" % "bcprov-jdk15on" % "1.68",
   // "fr.acinq.secp256k1" % "secp256k1-kmp-jvm" % "0.5.1",
   // "fr.acinq.secp256k1" % "secp256k1-kmp-jni-jvm" % "0.5.1",
-  "com.softwaremill.quicklens" %% "quicklens" % "1.7.4",
+  "com.softwaremill.quicklens" %% "quicklens" % "1.9.0",
   // "org.scodec" %% "scodec-core" % "2.0.0-SNAPSHOT",
-  "org.scodec" %% "scodec-bits" % "1.1.29",
-  "org.hsqldb" % "hsqldb" % "2.6.0",
-  "com.lihaoyi" %% "fansi" % "0.2.14",
+  "org.scodec" %% "scodec-bits" % "1.1.34",
+  "org.hsqldb" % "hsqldb" % "2.7.0",
+  "com.lihaoyi" %% "fansi" % "0.4.0",
   // "com.orientechnologies" % "orientdb-graphdb" % "3.2.0",
-  "org.apache.tinkerpop" % "gremlin-core" % "3.5.1",
-  "org.apache.tinkerpop" % "tinkergraph-gremlin" % "3.5.1",
+  "org.apache.tinkerpop" % "gremlin-core" % "3.6.1",
+  "org.apache.tinkerpop" % "tinkergraph-gremlin" % "3.6.1",
   "org.typelevel" %% "paiges-core" % "0.4.2",
-  "io.circe" %% "circe-core" % "0.14.1",
-  "io.circe" %% "circe-parser" % "0.14.1",
-  "net.java.dev.jna" % "jna" % "5.9.0",
-  "io.d11" %% "zhttp" % "1.0.0.0-RC17",
-  "com.softwaremill.sttp.client3" %% "httpclient-backend-zio" % "3.3.15",
-  "com.softwaremill.sttp.client3" %% "circe" % "3.3.15",
+  "io.circe" %% "circe-core" % "0.14.3",
+  "io.circe" %% "circe-parser" % "0.14.3",
+  "net.java.dev.jna" % "jna" % "5.12.1",
+  "io.d11" %% "zhttp" % "2.0.0-RC11",
+  "com.softwaremill.sttp.client3" %% "httpclient-backend-zio" % "3.5.2",
+  "com.softwaremill.sttp.client3" %% "circe" % "3.8.2",
   "org.zeromq" % "jeromq" % "0.5.2",
   "dev.optics" %% "monocle-core" % "3.1.0",
-  "org.typelevel" %% "cats-parse" % "0.3.4",
-  "dnsjava" % "dnsjava" % "3.4.2"
+  "org.typelevel" %% "cats-parse" % "0.3.8",
+  "dnsjava" % "dnsjava" % "3.5.1"
   // "org.parboiled" % "parboiled_2.13" % "2.3.0" // not available for Scala3 yet
+)
+
+excludeDependencies ++= Seq(
+  ExclusionRule("org.scala-lang.modules", "scala-collection-compat_2.13")
 )
 
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")

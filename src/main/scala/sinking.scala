@@ -1,5 +1,5 @@
 import zio.*
-import zio.console.*
+import zio.Console.*
 import zio.stream.*
 
 object sinking extends App:
@@ -7,7 +7,7 @@ object sinking extends App:
   trait X:
     def write(m: String): ZIO[Console, Throwable, Unit]
 
-  val s1 = ZSink.foreach[Console, Throwable, String](putStrLn(_))
+  val s1 = ZSink.foreach[Console, Throwable, String](printLine(_))
 
   val t1 = ZTransducer[Any, Nothing, String, String] {
     ZRef.makeManaged(0).map { ref =>
@@ -32,7 +32,7 @@ object sinking extends App:
             hr <- ZHub.unbounded[String].map(_.map(_.hashCode))
             hw <- ZHub.unbounded[Int].map(_.map(_.toString))
             f1 <- c.read
-              .tap(x => putStrLn(s"Processing: $x"))
+              .tap(x => printLine(s"Processing: $x"))
               .map(_.toString)
               // .transduce(ZTransducer.utf8Decode >>> ZTransducer.splitLines)
               .foreach(s => hr.publish(s))
@@ -40,14 +40,14 @@ object sinking extends App:
             f3 <- ZStream
               .fromHub(hw)
               .foreach(x =>
-                putStrLn(s"Sending: $x") *> Stream(x + '\n')
+                printLine(s"Sending: $x") *> Stream(x + '\n')
                   .mapConcat(_.getBytes)
                   .run(c.write)
               )
               .fork
             f2 <- ZStream
               .fromHub(hr)
-              .foreach(i => putStrLn(s"Received: $i") *> hw.publish(i * 10))
+              .foreach(i => printLine(s"Received: $i") *> hw.publish(i * 10))
             // .fork
             _ <- c.close()
           yield ()
