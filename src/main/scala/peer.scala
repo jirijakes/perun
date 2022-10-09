@@ -40,7 +40,7 @@ def start(
     conf: Configuration,
     in: Stream[Throwable, Byte],
     out: Sink[Throwable, Byte, Nothing, Int],
-    close: ZIO[Any, Nothing, Unit],
+    close: ZIO[Any, java.io.IOException, Unit],
     rk: CipherState,
     sk: CipherState
 ): ZIO[
@@ -51,64 +51,63 @@ def start(
 ] =
   for
     state <- Ref.make(State(None))
-    gossipFilter = state.foldAll(
-      identity,
-      identity,
-      identity,
-      (f: GossipTimestampFilter) => s => Right(s.copy(gossipFilter = Some(f))),
-      s => Right(s.gossipFilter)
-    )
     // _ <- execute("CREATE TABLE prd (id INT)").orDie
-    hr <- ZHub.unbounded[ByteVector]
-    hw <- ZHub.unbounded[Message]
-    _ <- ZStream
-      .fromHub(hr)
-      .map(b => perun.proto.decode(b).map((b, _)))
-      .collect { case Right(m) => m }
-      /* This can be parallelized but attention still has to be paid to
-       * order of messages. Peer will send us channel announcements first,
-       * then node announcements. We should make sure that validation of
-       * node announcement will not depend on when channel announcement
-       * is processed. There needs to be some synchronization or retrying.
-       */
-      .mapM(perun.proto.bolt.bolt.validate(conf))
-      .partitionEither(a => UIO.succeed(a.toEither)) //validate(conf))
-      .use { (errs, msgs) =>
-        val s1 = msgs
-          .mapM {
-            case Message.Ping(p) => perun.proto.ping.receiveMessage(p)
-            case Message.GossipTimestampFilter(f) =>
-              gossipFilter.set(f).as(Response.Ignore)
-            // state.update(receiveGTF(f, _)).as(Response.Ignore)
-            case Message.Init(_)              => UIO(Response.Ignore)
-            case Message.Pong(_)              => UIO(Response.Ignore)
-            case Message.ReplyChannelRange(_) => UIO(Response.Ignore)
-            case Message.NodeAnnouncement(n) =>
-              offerNode(n).as(Response.Ignore)
-            case Message.ChannelAnnouncement(c) =>
-              offerChannel(c).as(Response.Ignore)
-            case Message.ChannelUpdate(c)     => UIO(Response.Ignore)
-            case Message.QueryChanellRange(q) => UIO(Response.Ignore)
+    hr <- Hub.unbounded[ByteVector]
+    hw <- Hub.unbounded[Message]
+    _ <- ZIO.scoped {
+      ZStream
+        .fromHub(hr)
+        .map(b => perun.proto.decode(b).map((b, _)))
+        .collect { case Right(m) => m }
+        /* This can be parallelized but attention still has to be paid to
+         * order of messages. Peer will send us channel announcements first,
+         * then node announcements. We should make sure that validation of
+         * node announcement will not depend on when channel announcement
+         * is processed. There needs to be some synchronization or retrying.
+         */
+        .mapZIO(perun.proto.bolt.bolt.validate(conf))
+        .partitionEither(a => ZIO.succeed(a.toEither)) //validate(conf))
+        .flatMap { (errs, msgs) =>
+          val s1 = msgs
+            .mapZIO {
+              case Message.Ping(p) => perun.proto.ping.receiveMessage(p)
+              case Message.GossipTimestampFilter(f) =>
+                state.update(receiveGTF(f, _)).as(Response.Ignore)
+              case Message.Init(_)              => ZIO.succeed(Response.Ignore)
+              case Message.Pong(_)              => ZIO.succeed(Response.Ignore)
+              case Message.ReplyChannelRange(_) => ZIO.succeed(Response.Ignore)
+              case Message.NodeAnnouncement(n) =>
+                offerNode(n).as(Response.Ignore)
+              case Message.ChannelAnnouncement(c) =>
+                offerChannel(c).as(Response.Ignore)
+              case Message.ChannelUpdate(c)     => ZIO.succeed(Response.Ignore)
+              case Message.QueryChanellRange(q) => ZIO.succeed(Response.Ignore)
+            }
+
+          val s2 = errs.map(
+            _.head match
+              case Invalid.Denied(_, r) => r
+          )
+
+          s1.merge(s2).foreach {
+            // case Response.Send(m)        => hw.publish(m).unit
+            case Response.Ignore         => ZIO.unit
+            case Response.FailConnection => ZIO.unit
           }
-
-        val s2 = errs.map(
-          _.head match
-            case Invalid.Denied(_, r) => r
-        )
-
-        s1.merge(s2).foreach {
-          // case Response.Send(m)        => hw.publish(m).unit
-          case Response.Ignore         => ZIO.unit
-          case Response.FailConnection => ZIO.unit
         }
-      }
+        .fork
+    }
+    _ <- in.chunks
+      .via(decrypt(rk))
+      .flattenChunks
+      .foreach(b => hr.publish(b))
       .fork
-    _ <- in.transduce(decrypt(rk)).foreach(b => hr.publish(b)).fork
     _ <- ZStream
       .fromHub(hw)
-      .tap(i => putStrLn(s"Sending: $i"))
+      .tap(i => printLine(s"Sending: $i"))
       .map(x => perun.proto.encode(x))
-      .transduce(encrypt(sk))
+      .via(encrypt(sk))
+      .flattenChunks
       .run(out)
       .fork
     _ <- (ZIO.sleep(1.second) *> hw
@@ -303,49 +302,31 @@ final case class DecryptState(
     demand: Option[Chunk[Byte]]
 )
 
-def decrypt(rk: CipherState): Transducer[String, Byte, ByteVector] =
-  ZTransducer {
-    RefM
-      .makeManaged(DecryptState(rk, None))
-      .map { ref =>
-        {
-          case None =>
-            ref.get.map(
-              _.demand.fold(Chunk.empty)(p => Chunk(ByteVector.view(p.toArray)))
-            )
-          case Some(bytes) =>
-            ref.modify { case DecryptState(cip, dem) =>
-              decryptAll(dem.fold(bytes)(_ ++ bytes), cip) match
-                case Decrypted.Done(cs, st) =>
-                  UIO((cs, DecryptState(st, None)))
-                case Decrypted.Demand(agg, part, st) =>
-                  UIO((agg, DecryptState(st, Some(part))))
-                case Decrypted.DecryptError(x) =>
-                  ZIO.fail(s"Decrypt Error: $x")
-                case Decrypted.DecodeError(x) =>
-                  ZIO.fail(s"Decode Error: $x")
-            }
-        }
-      }
+def decrypt(
+    rk: CipherState
+): ZPipeline[Any, String, Chunk[Byte], Chunk[ByteVector]] =
+  ZPipeline.mapAccumZIO(DecryptState(rk, None)) {
+    case (DecryptState(cip, dem), bytes) => {
+      decryptAll(dem.fold(bytes)(_ ++ bytes), cip) match
+        case Decrypted.Done(cs, st) =>
+          ZIO.succeed((DecryptState(st, None), cs))
+        case Decrypted.Demand(agg, part, st) =>
+          ZIO.succeed((DecryptState(st, Some(part)), agg))
+        case Decrypted.DecryptError(x) =>
+          ZIO.fail(s"Decrypt Error: $x")
+        case Decrypted.DecodeError(x) =>
+          ZIO.fail(s"Decode Error: $x")
+
+    }
   }
 
-def encrypt(sk: CipherState): Transducer[Nothing, ByteVector, Byte] =
-  ZTransducer {
-    ZRef
-      .makeManaged(sk)
-      .map { ref =>
-        {
-          case None                 => UIO(Chunk.empty)
-          case Some(c) if c.isEmpty => UIO(Chunk.empty)
-          case Some(c) =>
-            val b = c.head
-            val length = uint16.encode(b.length.toInt).getOrElse(???)
-            ref.modify { cip =>
-              val (lengthC, next) =
-                cip.encryptWithAd(ByteVector.empty, length.toByteVector)
-              val (bodyC, next1) = next.encryptWithAd(ByteVector.empty, b)
-              (Chunk.fromArray((lengthC ++ bodyC).toArray), next1)
-            }
-        }
-      }
-  }
+// TODO: Might be better to create a home-made pipeline which has out type Byte instead of Chunk[Byte].
+def encrypt(sk: CipherState): ZPipeline[Any, Nothing, ByteVector, Chunk[Byte]] =
+  ZPipeline
+    .mapAccum(sk) { (cip, b) =>
+      val length = uint16.encode(b.length.toInt).getOrElse(???)
+      val (lengthC, next) =
+        cip.encryptWithAd(ByteVector.empty, length.toByteVector)
+      val (bodyC, next1) = next.encryptWithAd(ByteVector.empty, b)
+      (next1, Chunk.fromArray((lengthC ++ bodyC).toArray))
+    }

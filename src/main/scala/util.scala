@@ -1,7 +1,7 @@
 package util
 
-import zio.stream.ZTransducer
-import zio.{Chunk, ZRef}
+import zio.stream.*
+import zio.*
 
 /** Emits chunks of lengths specified by `lengths` and then the rest of the stream.
   *
@@ -39,10 +39,32 @@ import zio.{Chunk, ZRef}
   *
   * @param lengths vararg specifying requested lenghts of chunks
   */
-def collectByLengths[T](
-    lengths: Int*
-): ZTransducer[Any, Nothing, T, Chunk[T]] =
-  ZTransducer {
+def collectByLengths[R, E, T](lengths: Int*): ZPipeline[R, E, T, Chunk[T]] =
+  ZPipeline.suspend {
+    def collect(
+        lengths: List[Int],
+        buf: Chunk[T]
+    ): ZChannel[R, E, Chunk[T], Any, E, Chunk[Chunk[T]], Any] =
+      lengths match
+        case head :: tail => {
+          ZChannel.readWithCause(
+            (chunk: Chunk[T]) =>
+              val newbuf = buf ++ chunk
+              if newbuf.length >= head then
+                val (out, over) = newbuf.splitAt(head)
+                ZStream(out).channel *> collect(tail, over)
+              else collect(lengths, newbuf),
+            (c: Cause[E]) => ZChannel.failCause(c),
+            _ => ZStream(buf).channel
+          )
+        }
+        case Nil => ZStream(buf).channel *> ZChannel.identity[E, Chunk[T], Any].mapOut(Chunk(_))
+
+    ZPipeline.fromChannel(collect(lengths.toList, Chunk.empty))
+  }
+
+/*
+  ZSink {
     ZRef
       .makeManaged((lengths.toList, Chunk[T]()))
       .map { st =>
@@ -61,3 +83,4 @@ def collectByLengths[T](
         }
       }
   }
+ */

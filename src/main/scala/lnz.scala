@@ -53,15 +53,15 @@ object lnz extends App:
       write: Sink[Throwable, Byte, Nothing, Int]
   ) =
     read
-      .transduce(collectByLengths(50, 66))
+      .via(collectByLengths(50, 66))
       .map(c => ByteVector.apply(c.toArray))
       // .tap(b => putStrLn(b.toString))
-      .foldWhileM(
+      .runFoldWhileZIO(
         (Right(init): Either[Peer, HandshakeState], Option.empty[ByteVector])
       )(_._2.isEmpty) {
         case ((l @ Left(_), _), m) =>
           // println("1 @@@@ " + l)
-          UIO((l, Some(m)))
+          ZIO.succeed((l, Some(m)))
         case ((Right(st), _), m) =>
           for
             x <- st.readMessage(m)
@@ -69,7 +69,7 @@ object lnz extends App:
             y <- x match
               case HandshakeResult.Done(c1, c2) =>
                 // println("3 @@@@ " + x + " / " + m)
-                UIO.succeed((Left(Peer(c1, c2)), None))
+                ZIO.succeed((Left(Peer(c1, c2)), None))
 
               case HandshakeResult.Continue(_, s) =>
                 // println("4 @@@@ " + x + " / " + m)
@@ -117,13 +117,13 @@ object lnz extends App:
             perun.peer
               .start(
                 perun.peer.Configuration(perun.proto.blockchain.Chain.Testnet),
-                Stream.fromIterable(leftover.toArray) ++ c.read,
+                ZStream.fromIterable(leftover.toArray) ++ c.read,
                 c.write,
-                c.close(),
+                c.closeWrite(),
                 peer.rk,
                 peer.sk
               )
-              .ensuring(c.close())
+              .ensuring(c.closeWrite().orDie)
               .fork
           }
       }
