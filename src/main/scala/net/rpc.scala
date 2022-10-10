@@ -63,7 +63,7 @@ case class BitcoinDRpc(
     for
       h <- rpc[String]("getblockhash")(Tuple1(block))
       b <- rpc[Block]("getblock")(h.get, 2)
-      o <- rpc[TxOut]("gettxout")(b.get.tx(tx).txid, 0)
+      o <- rpc[TxOut]("gettxout")(b.get.tx(tx).txid, out)
     yield o
 
 def bitcoind(

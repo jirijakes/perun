@@ -17,10 +17,10 @@ object P2P:
   def inMemory: ZLayer[Any, Throwable, P2P] = tinkergraph >>> gremlin
 
 def offerNode(n: NodeAnnouncement): ZIO[P2P, Throwable, Unit] =
-  ZIO.serviceWith(_.offerNode(n))
+  ZIO.serviceWithZIO(_.offerNode(n))
 
 def offerChannel(c: ChannelAnnouncement): ZIO[P2P, Throwable, Unit] =
-  ZIO.serviceWith(_.offerChannel(c))
+  ZIO.serviceWithZIO(_.offerChannel(c))
 
 def findChannel(
     shortChannelId: ShortChannelId

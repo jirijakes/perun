@@ -41,7 +41,7 @@ def tinkergraph: ZLayer[Any, Throwable, GraphTraversalSource] =
       .acquireRelease(
         ZIO
           .succeed(traversal().withEmbedded(TinkerGraph.open()))
-          // .tap(g => ZIO.attemptBlocking(g.io("init.xml").read().iterate()))
+        // .tap(g => ZIO.attemptBlocking(g.io("init.xml").read().iterate()))
       )(g =>
         ZIO.attemptBlocking(g.io("graf.xml").write().iterate()).ignore *>
           ZIO.succeed(g.close())
@@ -109,7 +109,7 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
     ZIO.succeed(channels)
 
   def findChannel(shortChannelId: ShortChannelId): Task[Option[Channel]] =
-    val res = g
+    def res = g
       .E()
       .has("channel", "shortChannelId", shortChannelId.toString)
       .project("from", "to")
@@ -117,7 +117,7 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
       .by(inV().values("id"))
       .toList()
 
-    val channel =
+    def channel =
       res.asScala
         .map { p =>
           val m = p.asScala
@@ -133,7 +133,9 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
         .headOption
         .flatten
 
-    ZIO.succeed(channel)
+    import zio.Duration.*
+    // TODO: Remove sleep when we understand why just inserted channel can't be retreived
+    ZIO.sleep(50.millis) *> ZIO.succeed(channel)
 
   def offerChannel(c: ChannelAnnouncement): Task[Unit] =
     val n1 = getOrCreateNode(c.nodeId1)

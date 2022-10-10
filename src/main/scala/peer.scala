@@ -125,7 +125,7 @@ def start(
     // _ <- (ZIO.sleep(3.second) *> hw
     // .publish(
     // Message.GossipTimestampFilter(
-    // GossipTimestampFilter(Chain.Testnet, 0L, 4294967295L)
+    // GossipTimestampFilter(Chain.Regtest, 0L, 4294967295L)
     // )
     // )).fork
     // _ <- perun.proto.ping.schedule(hr, hw).fork

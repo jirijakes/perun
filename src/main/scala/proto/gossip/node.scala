@@ -220,5 +220,5 @@ val channelUpdate: Codec[ChannelUpdate] =
       ("htlc_minimum_msat" | msat) ::
       ("fee_base_msat" | uint32) ::
       ("fee_proportional_millionths" | uint32) ::
-      ("hltc_maximum_msat" | msat)
+      ("htlc_maximum_msat" | msat)
   ).as[ChannelUpdate]
