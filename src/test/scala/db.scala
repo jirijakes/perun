@@ -24,6 +24,6 @@ object StoreTest extends ZIOSpecDefault:
         .provideLayer(live("jdbc:hsqldb:mem:inmem"))
         .orDie
 
-      assert(y)(equalTo(Chunk(1, 2, 3)))
+      assertZIO(y)(equalTo(Chunk(1, 2, 3)))
     }
   )

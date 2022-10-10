@@ -107,9 +107,7 @@ def native: ZLayer[Any, Error, Secp256k1] =
             }
           ctx <- ZIO
             .attempt(
-              lib.secp256k1_context_create(
-                unsafe.flagSign | unsafe.flagVerify
-              )
+              lib.secp256k1_context_create(unsafe.flagSign | unsafe.flagVerify)
             )
             .refineOrDie { case x => Error.CouldNotInitialize }
         // cb = new lib.OnError:

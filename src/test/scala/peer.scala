@@ -35,7 +35,7 @@ object peer extends ZIOSpecDefault:
 
           val stream =
             in.via(perun.peer.encrypt(cip))
-              .map(c => Chunk(ByteVector.view(c.toArray)))
+              .map(c => ByteVector.view(c.toArray))
               .take(1002)
               .zipWithIndex
               .collect {
@@ -43,7 +43,7 @@ object peer extends ZIOSpecDefault:
               }
               .run(ZSink.collectAll)
 
-          assert(stream)(equalTo(expected))
+          assertZIO(stream)(equalTo(expected))
         }
       ),
       suite("decrypt stream")(
@@ -55,7 +55,7 @@ object peer extends ZIOSpecDefault:
           val in =
             ZStream.fromChunks(byteChunks("68656c6c6f")).forever.take(2000)
           val roundtrip = perun.peer.encrypt(cip) >>> perun.peer.decrypt(cip)
-          val stream = in.via(roundtrip).run(ZSink.collectAll)
+          val stream = in.via(roundtrip).flattenChunks.run(ZSink.collectAll)
           val expected = ByteVector.fromValidHex("68656c6c6f")
 
           assertZIO(stream)(forall(equalTo(expected)))

@@ -83,7 +83,7 @@ Compile / doc / scalacOptions ++= Seq("-snippet-compiler:compile")
 scalacOptions ++= List(
   // "-explain",
   "-new-syntax",
-  "-Ywarn-unused"
+  // "-Ywarn-unused"
 )
 
 scalaModuleInfo ~= (_.map(_.withOverrideScalaVersion(true)))

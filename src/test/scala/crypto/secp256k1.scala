@@ -56,15 +56,13 @@ object testSuite:
     suite("secp256k1")(
       test("sign") {
         check(vector)(t =>
-          assert(signMessage(t.d, t.m))(equalTo(t.signature))
-            .provideLayer(native)
+          assertZIO(signMessage(t.d, t.m))(equalTo(t.signature)).provide(native)
         )
       },
       test("verify") {
         check(vector)(t =>
-          assertZIO(
-            verifySignature(t.signature, t.m, t.d.publicKey)
-          )(isTrue).provideLayer(native)
+          assertZIO(verifySignature(t.signature, t.m, t.d.publicKey))(isTrue)
+            .provide(native)
         )
       }
     )

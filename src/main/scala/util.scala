@@ -55,10 +55,14 @@ def collectByLengths[R, E, T](lengths: Int*): ZPipeline[R, E, T, Chunk[T]] =
                 ZStream(out).channel *> collect(tail, over)
               else collect(lengths, newbuf),
             (c: Cause[E]) => ZChannel.failCause(c),
-            _ => ZStream(buf).channel
+            _ => if buf.isEmpty then ZChannel.unit else ZStream(buf).channel
           )
         }
-        case Nil => ZStream(buf).channel *> ZChannel.identity[E, Chunk[T], Any].mapOut(Chunk(_))
+        case Nil =>
+          (if buf.isEmpty then ZChannel.unit
+           else ZStream(buf).channel) *> ZChannel
+            .identity[E, Chunk[T], Any]
+            .mapOut(Chunk(_))
 
     ZPipeline.fromChannel(collect(lengths.toList, Chunk.empty))
   }

@@ -18,14 +18,14 @@ object util extends ZIOSpecDefault:
     suite("util")(
       suite("collectByLengths")(
         test("leftovers preserve chunks") {
-          assert(run(collectByLengths(2), five))(
+          assertZIO(run(collectByLengths(2), five))(
             equalTo(Chunk(Chunk(1, 2), Chunk(3), Chunk(4), Chunk(5)))
           )
         },
         test("consume all") {
-          assert(run(collectByLengths(2, 3), five))(
+          assertZIO(run(collectByLengths(2, 3), five))(
             equalTo(Chunk(Chunk(1, 2), Chunk(3, 4, 5)))
           )
         }
       )
-    ) @@ TestAspect.ignore
+    ) // @@ TestAspect.ignore
