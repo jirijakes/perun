@@ -5,7 +5,7 @@ import scodec.{Attempt, DecodeResult, Err}
 import zio.*
 import zio.test.*
 
-object test extends DefaultRunnableSpec:
+object test extends ZIOSpecDefault:
 
   import perun.proto.uint64.*
 
@@ -14,7 +14,7 @@ object test extends DefaultRunnableSpec:
   val spec =
     suite("bigsize")(
       suite("encoding")(
-        testM("BOLT #1 testing vector") {
+        test("BOLT #1 testing vector") {
           val gen = Gen.fromIterable(
             List(
               (0L, hex"00"),
@@ -35,7 +35,7 @@ object test extends DefaultRunnableSpec:
       ),
       suite("decoding")(
         suite("BOLT #1 testing vector")(
-          testM("success") {
+          test("success") {
             val gen = Gen.fromIterable(
               List(
                 (hex"00", 0L),
@@ -55,7 +55,7 @@ object test extends DefaultRunnableSpec:
               )
             }
           },
-          testM("failure – not canonical") {
+          test("failure – not canonical") {
             val gen = Gen.fromIterable(
               List(hex"fd00fc", hex"fe0000ffff", hex"ff00000000ffffffff")
                 .map(_.toBitVector)
@@ -67,7 +67,7 @@ object test extends DefaultRunnableSpec:
               )
             }
           },
-          testM("failure – not enough bits") {
+          test("failure – not enough bits") {
             val gen = Gen
               .fromIterable(
                 List(

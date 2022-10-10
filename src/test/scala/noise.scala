@@ -8,18 +8,19 @@ import zio.test.*
 
 import perun.crypto.*
 import perun.test.*
+import zio.test.ZIOSpecDefault
 
-object noise extends DefaultRunnableSpec:
+object noise extends ZIOSpecDefault:
 
   val bolt8test =
     suite("BOLT #8 test vector")(
-      testM("happy scenario") {
+      test("happy scenario") {
         val chunks = List(
           "00036360e856310ce5d294e8be33fc807077dc56ac80d95d9cd4ddbd21325eff73f70df6086551151f58b8afe6c195782c6a",
           "00b9e3a702e93e3a9948c2ed6e5fd7590a6e1c3a0344cfc9d5b57357049aa22355361aa02e55a8fc28fef5bd6d71ad0c38228dc68b1c466263b47fdf31e560e139ba010101"
         ).map(s => Chunk.fromArray(ByteVector.fromValidHex(s).toArray))
 
-        val in = Stream.fromChunks(chunks*)
+        val in = ZStream.fromChunks(chunks*)
 
         val out = ZSink.foreachChunk[Any, Throwable, Byte](_ => ZIO.unit).as(1)
 
@@ -47,8 +48,8 @@ object noise extends DefaultRunnableSpec:
           ByteVector(1, 1, 1)
         )
 
-        assertM(
-          handshake(responder, in, out).provideCustomLayer(
+        assertZIO(
+          handshake(responder, in, out).provideLayer(
             keygen ++ perun.crypto.secp256k1.native
           )
         )(

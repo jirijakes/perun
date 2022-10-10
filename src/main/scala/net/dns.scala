@@ -28,10 +28,3 @@ val live: ZLayer[Any, Nothing, Dns] =
   ZLayer.succeed(DnsJava(LookupSession.defaultBuilder.build))
 
 def lookup(s: String) = ZIO.serviceWith[Dns](_.lookup(s))
-
-object DDD extends ZIOApp:
-  def run(r: List[String]) =
-    lookup("nodes.lightning.directory")
-      .flatMap(r => zio.Console.printLine(r))
-      .provide(live)
-      .exitCode

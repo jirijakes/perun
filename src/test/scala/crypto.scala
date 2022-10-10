@@ -2,9 +2,9 @@ package perun.crypto
 
 import zio.test.*
 
-object test extends DefaultRunnableSpec:
+object testSuite extends ZIOSpecDefault:
   val spec =
     suite("crypto")(
-      chacha.test.spec,
-      secp256k1.test.spec
+      chacha.testSuite.spec,
+      secp256k1.testSuite.spec
     )

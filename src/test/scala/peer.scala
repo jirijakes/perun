@@ -9,12 +9,12 @@ import zio.test.*
 
 import perun.test.*
 
-object peer extends DefaultRunnableSpec:
+object peer extends ZIOSpecDefault:
 
   val spec =
     suite("peer")(
       suite("encrypt stream")(
-        testM("BOLT #8 message encryption test") {
+        test("BOLT #8 message encryption test") {
           val cip = cipherState(
             "919219dbb2920afa8db80f9a51787a840bcf111ed8d588caf9ab4be716e42b01",
             "969ab31b4d288cedf6218839b27a3e2140827047f2c0f01bf5c04435d43511a9"
@@ -22,7 +22,7 @@ object peer extends DefaultRunnableSpec:
 
           val accept = Set(0L, 1, 500, 501, 1000, 1001)
 
-          val in = Stream.fromChunks(byteChunks("68656c6c6f")).forever
+          val in = ZStream.fromChunks(byteChunks("68656c6c6f")).forever
 
           val expected = byteChunks(
             "cf2b30ddf0cf3f80e7c35a6e6730b59fe802473180f396d88a8fb0db8cbcf25d2f214cf9ea1d95",
@@ -34,8 +34,8 @@ object peer extends DefaultRunnableSpec:
           )
 
           val stream =
-            in.transduce(perun.peer.encrypt(cip))
-              .mapChunks(c => Chunk(ByteVector.view(c.toArray)))
+            in.via(perun.peer.encrypt(cip))
+              .map(c => Chunk(ByteVector.view(c.toArray)))
               .take(1002)
               .zipWithIndex
               .collect {
@@ -43,22 +43,22 @@ object peer extends DefaultRunnableSpec:
               }
               .run(ZSink.collectAll)
 
-          assertM(stream)(equalTo(expected))
+          assert(stream)(equalTo(expected))
         }
       ),
       suite("decrypt stream")(
-        testM("BOLT #8 message encryption test (roundtrip)") {
+        test("BOLT #8 message encryption test (roundtrip)") {
           val cip = cipherState(
             "919219dbb2920afa8db80f9a51787a840bcf111ed8d588caf9ab4be716e42b01",
             "969ab31b4d288cedf6218839b27a3e2140827047f2c0f01bf5c04435d43511a9"
           )
           val in =
-            Stream.fromChunks(byteChunks("68656c6c6f")).forever.take(2000)
+            ZStream.fromChunks(byteChunks("68656c6c6f")).forever.take(2000)
           val roundtrip = perun.peer.encrypt(cip) >>> perun.peer.decrypt(cip)
-          val stream = in.transduce(roundtrip).run(ZSink.collectAll)
+          val stream = in.via(roundtrip).run(ZSink.collectAll)
           val expected = ByteVector.fromValidHex("68656c6c6f")
 
-          assertM(stream)(forall(equalTo(expected)))
+          assertZIO(stream)(forall(equalTo(expected)))
         }
       )
     )

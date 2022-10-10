@@ -1,14 +1,13 @@
 package perun.crypto.chacha
 
 import scodec.bits.ByteVector
-import zio.*
-import zio.blocking.*
+import zio.ZIO
 import zio.json.*
 import zio.stream.*
 import zio.test.Assertion.*
 import zio.test.*
 
-object test:
+object testSuite:
 
   given JsonDecoder[ByteVector] = JsonDecoder[String].map(s =>
     ByteVector.fromHex(s).getOrElse(ByteVector(s.getBytes))
@@ -26,12 +25,12 @@ object test:
   given JsonDecoder[Test] = DeriveJsonDecoder.gen[Test]
 
   // Thanks to https://github.com/calvinmetcalf/chacha20poly1305/blob/master/test/fixtures.json
-  val vector: Gen[Blocking, Test] =
+  val vector =
     Gen
-      .fromEffect(
+      .fromZIO(
         ZStream
           .fromResource("perun/crypto/chacha_test_vector.json")
-          .transduce(ZTransducer.utf8Decode)
+          .via(ZPipeline.utf8Decode)
           .runCollect
           .flatMap(s =>
             ZIO
@@ -45,14 +44,14 @@ object test:
   val spec =
     suite("chacha")(
       suite("ChaCha20-Poly1305")(
-        testM("encrypt") {
+        test("encrypt") {
           checkAll(vector)(t =>
             assert(encrypt(t.key, t.nonce, t.ad, t.plaintext))(
               equalTo(t.ciphertext ++ t.tag)
             )
           )
         },
-        testM("decrypt") {
+        test("decrypt") {
           checkAll(vector)(t =>
             assert(decrypt(t.key, t.nonce, t.ad, t.ciphertext ++ t.tag))(
               equalTo(Right(t.plaintext))

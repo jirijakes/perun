@@ -14,11 +14,9 @@ addCommandAlias(
 )
 addCommandAlias("prepare", "; fix; fmt")
 
-resolvers ++= List(
-  Resolver.publishMavenLocal,
-  Resolver.sonatypeRepo("snapshots")
-)
-
+resolvers ++= Resolver.sonatypeOssRepos("snapshots")
+resolvers += Resolver.publishMavenLocal
+  
 val zioVersion = "2.0.2"
 
 ThisBuild / scalafixDependencies ++= List(
@@ -40,8 +38,8 @@ libraryDependencies ++= List(
   "dev.zio" %% "zio-json" % "0.3.0",
   "nl.vroste" %% "rezilience" % "0.9.0",
   // "org.bitcoin-s" % "bitcoin-s-core_2.13" % "0.6.0",
-  "org.bitcoin-s" % "bitcoin-s-core_2.13" % "1.9.5" excludeAll ("org.scodec"),
-  "org.bitcoin-s" % "bitcoin-s-crypto_2.13" % "1.9.5" excludeAll ("org.scodec"),
+  "org.bitcoin-s" % "bitcoin-s-core_2.13" % "1.9.6" excludeAll ("org.scodec"),
+  "org.bitcoin-s" % "bitcoin-s-crypto_2.13" % "1.9.6" excludeAll ("org.scodec"),
   // "org.bouncycastle" % "bcprov-jdk15on" % "1.68",
   // "fr.acinq.secp256k1" % "secp256k1-kmp-jvm" % "0.5.1",
   // "fr.acinq.secp256k1" % "secp256k1-kmp-jni-jvm" % "0.5.1",

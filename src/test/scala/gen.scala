@@ -2,7 +2,7 @@ package perun.test.gen
 
 import scodec.bits.ByteVector
 import zio.*
-import zio.random.*
+import zio.Random.*
 import zio.test.*
 
 import perun.crypto.*
@@ -17,22 +17,21 @@ import perun.proto.gossip.ChannelAnnouncement
 val anyChain: Gen[Random, Chain] =
   Gen.elements(Chain.Testnet, Chain.Mainnet, Chain.Signet)
 
-val validKeyPair: Gen[Has[Keygen], PrivateKey] =
-  Gen.fromEffect(generateKeypair)
+val validKeyPair: Gen[Keygen, PrivateKey] =
+  Gen.fromZIO(generateKeypair)
 
 // val validSignature: Gen[Any, Signature] = ???
 
 val dummySignature = Gen.const(Signature.dummy)
 
 val validShortChannelId: Gen[Random, ShortChannelId] =
-  Gen.zipN(Gen.int(0, 25000), Gen.int(0, 100), Gen.int(0, 10))(
-    ShortChannelId.apply
-  )
+  (Gen.int(0, 25000) <*> Gen.int(0, 100) <*> Gen.int(0, 10))
+    .map(ShortChannelId.apply)
 
 val validChannelAnnouncement
-    : Gen[Has[Keygen] & Has[Secp256k1] & Random, ChannelAnnouncement] =
+    : Gen[Keygen & Secp256k1 & Random, ChannelAnnouncement] =
   (validKeyPair <*> validKeyPair <*> validKeyPair <*> validKeyPair)
-    .flatMap { case (((node1, node2), btc1), btc2) =>
+    .flatMap { (node1, node2, btc1, btc2) =>
       val ca = for
         sigdum <- dummySignature
         chain <- anyChain
@@ -56,7 +55,7 @@ val validChannelAnnouncement
         ByteVector.empty
       )
 
-      ca.mapM(a =>
+      ca.mapZIO(a =>
         for
           sig1 <- a.signature(node1).orDieWith(_ => new Exception(""))
           sig2 <- a.signature(node2).orDieWith(_ => new Exception(""))

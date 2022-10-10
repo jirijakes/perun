@@ -4,7 +4,7 @@ import zio.*
 import zio.Console.*
 import zio.stream.*
 
-object lnz extends App:
+object lnz extends ZIOAppDefault:
 
   val ls1 = perun.crypto.PrivateKey.fromHex(
     "1111111111111111111111111111111111111111111111111111111111111111"
@@ -108,7 +108,7 @@ object lnz extends App:
       ) ++
       native.mapError(e => new Exception(e.toString)).orDie
 
-  def run(args: List[String]): URIO[String, ExitCode] =
+  def run =
     ZStream
       .fromSocketServer(9977, None)
       .foreach { c =>
@@ -128,7 +128,8 @@ object lnz extends App:
           }
       }
       .onInterrupt(ZIO.succeedBlocking(println("DOOONE")))
-      .provide(dep)
+      .provideSomeLayer(dep)
+      .provideEnvironment(DefaultServices.live)
       .exitCode
 
 end lnz

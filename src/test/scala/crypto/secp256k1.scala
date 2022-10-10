@@ -3,8 +3,7 @@ package perun.crypto.secp256k1
 import org.bitcoins.crypto.CryptoUtil.sha256
 import org.bitcoins.crypto.Sha256Digest
 import scodec.bits.ByteVector
-import zio.*
-import zio.blocking.*
+import zio.ZIO
 import zio.json.*
 import zio.stream.*
 import zio.test.Assertion.*
@@ -12,7 +11,7 @@ import zio.test.*
 
 import perun.crypto.*
 
-object test:
+object testSuite:
 
   given JsonDecoder[Signature] =
     JsonDecoder[String].map(s =>
@@ -36,12 +35,12 @@ object test:
   given JsonDecoder[Tests] = DeriveJsonDecoder.gen
 
   // Thanks to https://github.com/bitcoinjs/tiny-secp256k1
-  val vector: Gen[Blocking, Test] =
+  val vector =
     Gen
-      .fromEffect(
+      .fromZIO(
         ZStream
           .fromResource("perun/crypto/secp256k1_test_vector.json")
-          .transduce(ZTransducer.utf8Decode)
+          .via(ZPipeline.utf8Decode)
           .runCollect
           .flatMap(s =>
             ZIO
@@ -55,17 +54,17 @@ object test:
   // TODO: Is the JSON loaded and parsed twice? Can something be done about that?
   val spec =
     suite("secp256k1")(
-      testM("sign") {
-        checkM(vector)(t =>
-          assertM(signMessage(t.d, t.m))(equalTo(t.signature))
-            .provideCustomLayer(native)
+      test("sign") {
+        check(vector)(t =>
+          assert(signMessage(t.d, t.m))(equalTo(t.signature))
+            .provideLayer(native)
         )
       },
-      testM("verify") {
-        checkM(vector)(t =>
-          assertM(
+      test("verify") {
+        check(vector)(t =>
+          assertZIO(
             verifySignature(t.signature, t.m, t.d.publicKey)
-          )(isTrue).provideCustomLayer(native)
+          )(isTrue).provideLayer(native)
         )
       }
     )
