@@ -95,8 +95,7 @@ def start(
             case Response.FailConnection => ZIO.unit
           }
         }
-        .fork
-    }
+    }.fork
     _ <- in.chunks
       .via(decrypt(rk))
       .flattenChunks
@@ -113,13 +112,13 @@ def start(
     _ <- (ZIO.sleep(1.second) *> hw
       .publish(
         Message.Init(
-          Init(Features(hex"0x8000000000000000002822aaa2"), List(Chain.Testnet))
+          Init(Features(hex"0x8000000000000000002822aaa2"), List(Chain.Regtest))
         )
       )).fork
     // _ <- ZIO.sleep(2.second) *> hw
     // .publish(
     // Message.QueryChanellRange(
-    // QueryChannelRange(Chain.Testnet, 1905770, 1000, false, false)
+    // QueryChannelRange(Chain.Regtest, 0, 1000, false, false)
     // )
     // )
     // .fork

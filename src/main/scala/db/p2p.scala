@@ -14,7 +14,7 @@ trait P2P:
 
 object P2P:
   import perun.db.tinkerpop.*
-  def inMemory: ULayer[P2P] = tinkergraph >>> gremlin
+  def inMemory: ZLayer[Any, Throwable, P2P] = tinkergraph >>> gremlin
 
 def offerNode(n: NodeAnnouncement): ZIO[P2P, Throwable, Unit] =
   ZIO.serviceWith(_.offerNode(n))

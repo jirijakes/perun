@@ -35,19 +35,16 @@ def cast[T: ClassTag](v: Any): Option[T] =
 
 /** Layer for creating an in-memory Tinkergraph database suitable for Gremlin.
   */
-def tinkergraph: ULayer[GraphTraversalSource] =
+def tinkergraph: ZLayer[Any, Throwable, GraphTraversalSource] =
   ZLayer.scoped {
     ZIO
       .acquireRelease(
         ZIO
           .succeed(traversal().withEmbedded(TinkerGraph.open()))
-          .tap(g => ZIO.succeedBlocking(g.io("init.xml").read().iterate()))
+          // .tap(g => ZIO.attemptBlocking(g.io("init.xml").read().iterate()))
       )(g =>
-        ZIO.succeed(g.io("graf.xml").write().iterate()) *> ZIO.succeed(
-          println("KONEC")
-        ) *> ZIO.succeed(
-          g.close()
-        )
+        ZIO.attemptBlocking(g.io("graf.xml").write().iterate()).ignore *>
+          ZIO.succeed(g.close())
       )
   }
 

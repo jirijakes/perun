@@ -56,7 +56,7 @@ libraryDependencies ++= List(
   "io.circe" %% "circe-parser" % "0.14.3",
   "net.java.dev.jna" % "jna" % "5.12.1",
   "io.d11" %% "zhttp" % "2.0.0-RC11",
-  "com.softwaremill.sttp.client3" %% "httpclient-backend-zio" % "3.5.2",
+  "com.softwaremill.sttp.client3" %% "zio" % "3.8.2",
   "com.softwaremill.sttp.client3" %% "circe" % "3.8.2",
   "org.zeromq" % "jeromq" % "0.5.2",
   "dev.optics" %% "monocle-core" % "3.1.0",

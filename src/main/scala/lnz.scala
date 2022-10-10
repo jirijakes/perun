@@ -20,6 +20,7 @@ object lnz extends ZIOAppDefault:
 
   import noise.*
   import perun.crypto.keygen.*
+  import perun.crypto.publicKey
   import perun.crypto.secp256k1.*
   import util.*
 
@@ -92,23 +93,50 @@ object lnz extends ZIOAppDefault:
 
   val dep: ZLayer[
     Any,
-    Nothing,
+    Throwable,
     Secp256k1 & Rpc & P2P & Keygen & perun.db.store.Store
   ] =
     perun.crypto.keygen.liveKeygen ++
-      store.live("jdbc:hsqldb:file:testdb").orDie ++
+      store.live("jdbc:hsqldb:file:testdb") ++
       P2P.inMemory ++
       (
-        HttpClientZioBackend.layer().orDie >>>
+        HttpClientZioBackend.layer() >>>
           bitcoind(
-            uri"http://10.0.0.21:18332",
-            "__cookie__",
-            "b1ff31caa6d6324557d010d2f8257d5dc9e9f90222281b97a51605f2460ebb4c"
-          ).orDie
+            uri"http://127.0.0.1:18443",
+            "polaruser",
+            "polarpass"
+          )
       ) ++
-      native.mapError(e => new Exception(e.toString)).orDie
+      native.mapError(e => new Exception(e.toString))
+
+  val dep2 =
+    // HttpClientZioBackend.layer()
+    // perun.crypto.keygen.liveKeygen ++
+    // store.live("jdbc:hsqldb:file:testdb").orDie ++
+    // P2P.inMemory
+    // (
+    HttpClientZioBackend.layer().orDie >>>
+      bitcoind(
+        uri"http://127.0.0.1:18443",
+        "polaruser",
+        "polarpass"
+      ).orDie
+  // ) ++
+  // native.mapError(e => new Exception(e.toString)).orDie
+
+  def run2 =
+    ZStream
+      .fromSocketServer(9977, None)
+      .foreach(c => Console.printLine("AHOJ: " + c))
+      .onInterrupt(Console.printLine("DOOONE").ignore)
+      .provideSomeLayer(dep)
+      .provideEnvironment(DefaultServices.live)
+// .exitCode
+
+  // Polar: 172.17.0.1
 
   def run =
+    Console.printLine(ls1.publicKey) *>
     ZStream
       .fromSocketServer(9977, None)
       .foreach { c =>
@@ -116,7 +144,7 @@ object lnz extends ZIOAppDefault:
           .flatMap { (peer, leftover) =>
             perun.peer
               .start(
-                perun.peer.Configuration(perun.proto.blockchain.Chain.Testnet),
+                perun.peer.Configuration(perun.proto.blockchain.Chain.Regtest),
                 ZStream.fromIterable(leftover.toArray) ++ c.read,
                 c.write,
                 c.closeWrite(),

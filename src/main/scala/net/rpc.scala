@@ -30,7 +30,7 @@ case class BitcoinDRpc(
     endpoint: Uri,
     user: String,
     password: String,
-    cl: SttpClient,
+    cl: SttpBackend[Task, Any],
     sem: Semaphore
 ) extends Rpc:
 
