@@ -90,7 +90,7 @@ def start(
           )
 
           s1.merge(s2).foreach {
-            // case Response.Send(m)        => hw.publish(m).unit
+            case Response.Send(m)        => hw.publish(m).unit
             case Response.Ignore         => ZIO.unit
             case Response.FailConnection => ZIO.unit
           }
@@ -115,19 +115,19 @@ def start(
           Init(Features(hex"0x8000000000000000002822aaa2"), List(Chain.Regtest))
         )
       )).fork
-    // _ <- ZIO.sleep(2.second) *> hw
-    // .publish(
-    // Message.QueryChanellRange(
-    // QueryChannelRange(Chain.Regtest, 0, 1000, false, false)
-    // )
-    // )
-    // .fork
-    // _ <- (ZIO.sleep(3.second) *> hw
-    // .publish(
-    // Message.GossipTimestampFilter(
-    // GossipTimestampFilter(Chain.Regtest, 0L, 4294967295L)
-    // )
-    // )).fork
+    _ <- ZIO.sleep(2.second) *> hw
+      .publish(
+        Message.QueryChanellRange(
+          QueryChannelRange(Chain.Regtest, 0, 1000, false, false)
+        )
+      )
+      .fork
+    _ <- (ZIO.sleep(3.second) *> hw
+      .publish(
+        Message.GossipTimestampFilter(
+          GossipTimestampFilter(Chain.Regtest, 0L, 4294967295L)
+        )
+      )).fork
     // _ <- perun.proto.ping.schedule(hr, hw).fork
     _ <- ZIO.never
   yield ()

@@ -141,6 +141,7 @@ enum Invalid:
 
 enum Response:
   case Ignore
+  case Send(m: Message)
   case FailConnection
   case CloseChannel
   case Blacklist(nodes: NonEmptyChunk[NodeId])

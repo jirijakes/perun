@@ -50,10 +50,10 @@ val messageCodec: Codec[Message] = discriminated[Message].by(uint16)
   .caseP(265) { case GossipTimestampFilter(m) => m }(GossipTimestampFilter.apply )(gossip.gossipTimestampFilter)
 // format: on
 
-enum Response:
-  case Send(m: Message)
-  case Ignore
-  case FailConnection
+// enum Response:
+//   case Send(m: Message)
+//   case Ignore
+//   case FailConnection
 
 def decode(b: ByteVector): Either[String, Message] =
   messageCodec.decodeValue(b.toBitVector).toEither.left.map(_.toString)

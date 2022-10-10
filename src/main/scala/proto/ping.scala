@@ -9,7 +9,8 @@ import zio.Console.*
 import zio.Duration.*
 import zio.stream.*
 
-import perun.proto.{Message, Response}
+import perun.proto.Message
+import perun.proto.bolt.bolt.Response
 
 /** `ping` message that serves two purposes: keep TCP connections alive
   * and obfuscate traffic. A response [[Pong]] is expected upon sending
