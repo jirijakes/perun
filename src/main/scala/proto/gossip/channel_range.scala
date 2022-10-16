@@ -24,7 +24,8 @@ final case class ReplyChannelRange(
     firstBlock: Long,
     number: Long,
     complete: Boolean,
-    shortIds: Vector[ShortChannelId]
+    shortIds: Vector[ShortChannelId],
+    tlvs: ByteVector
 )
 
 val tlvQueryOption: Codec[BitVector] = bigsizeBits
@@ -65,5 +66,9 @@ val replyChannelRange: Codec[ReplyChannelRange] =
       ("first_blocknum" | uint32) ::
       ("number_of_blocks" | uint32) ::
       ("sync_complete" | bool(8)) ::
-      ("encoded_short_ids" | variableSizeBytes("len" | uint16, encodedShortIds))
+      ("encoded_short_ids" | variableSizeBytes(
+        "len" | uint16,
+        encodedShortIds
+      )) ::
+      ("reply_channel_range_tlvs" | bytes)
   ).as[ReplyChannelRange]

@@ -98,6 +98,9 @@ object lnz extends ZIOAppDefault:
   ] =
     perun.crypto.keygen.liveKeygen ++
       store.live("jdbc:hsqldb:file:testdb") ++
+      (Runtime.removeDefaultLoggers >>> zio.logging.console(
+        zio.logging.LogFormat.colored
+      )) ++
       P2P.inMemory ++
       (
         HttpClientZioBackend.layer() >>>
@@ -109,55 +112,33 @@ object lnz extends ZIOAppDefault:
       ) ++
       native.mapError(e => new Exception(e.toString))
 
-  val dep2 =
-    // HttpClientZioBackend.layer()
-    // perun.crypto.keygen.liveKeygen ++
-    // store.live("jdbc:hsqldb:file:testdb").orDie ++
-    // P2P.inMemory
-    // (
-    HttpClientZioBackend.layer().orDie >>>
-      bitcoind(
-        uri"http://127.0.0.1:18443",
-        "polaruser",
-        "polarpass"
-      ).orDie
-  // ) ++
-  // native.mapError(e => new Exception(e.toString)).orDie
-
-  def run2 =
-    ZStream
-      .fromSocketServer(9977, None)
-      .foreach(c => Console.printLine("AHOJ: " + c))
-      .onInterrupt(Console.printLine("DOOONE").ignore)
-      .provideSomeLayer(dep)
-      .provideEnvironment(DefaultServices.live)
-// .exitCode
-
   // Polar: 172.17.0.1
 
   def run =
     Console.printLine(ls1.publicKey) *>
-    ZStream
-      .fromSocketServer(9977, None)
-      .foreach { c =>
-        handshake(responder, c.read, c.write)
-          .flatMap { (peer, leftover) =>
-            perun.peer
-              .start(
-                perun.peer.Configuration(perun.proto.blockchain.Chain.Regtest),
-                ZStream.fromIterable(leftover.toArray) ++ c.read,
-                c.write,
-                c.closeWrite(),
-                peer.rk,
-                peer.sk
-              )
-              .ensuring(c.closeWrite().orDie)
-              .fork
-          }
-      }
-      .onInterrupt(ZIO.succeedBlocking(println("DOOONE")))
-      .provideSomeLayer(dep)
-      .provideEnvironment(DefaultServices.live)
-      .exitCode
+      ZStream
+        .fromSocketServer(9977, None)
+        .foreach { c =>
+          handshake(responder, c.read, c.write)
+            .flatMap { (peer, leftover) =>
+              perun.peer
+                .start(
+                  perun.peer.Configuration(
+                    perun.proto.blockchain.Chain.Regtest
+                  ),
+                  ZStream.fromIterable(leftover.toArray) ++ c.read,
+                  c.write,
+                  c.closeWrite(),
+                  peer.rk,
+                  peer.sk
+                )
+                .ensuring(c.closeWrite().orDie)
+                .fork
+            }
+        }
+        .onInterrupt(ZIO.succeedBlocking(println("DOOONE")))
+        .provideSomeLayer(dep)
+        .provideEnvironment(DefaultServices.live)
+        .exitCode
 
 end lnz

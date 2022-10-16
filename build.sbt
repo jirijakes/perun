@@ -48,6 +48,7 @@ libraryDependencies ++= List(
   "org.scodec" %% "scodec-bits" % "1.1.34",
   "org.hsqldb" % "hsqldb" % "2.7.0",
   "com.lihaoyi" %% "fansi" % "0.4.0",
+  "com.lihaoyi" %% "pprint" % "0.7.0",
   // "com.orientechnologies" % "orientdb-graphdb" % "3.2.0",
   "org.apache.tinkerpop" % "gremlin-core" % "3.6.1",
   "org.apache.tinkerpop" % "tinkergraph-gremlin" % "3.6.1",

@@ -27,6 +27,8 @@ import perun.proto.gossip.{
 import perun.proto.init.Init
 import perun.proto.Message
 import perun.proto.bolt.bolt.{Invalid, Response}
+import perun.proto.codecs.toBytes
+import perun.proto.DecodeError
 
 final case class State(
     gossipFilter: Option[GossipTimestampFilter]
@@ -57,8 +59,9 @@ def start(
     _ <- ZIO.scoped {
       ZStream
         .fromHub(hr)
-        .map(b => perun.proto.decode(b).map((b, _)))
-        .collect { case Right(m) => m }
+        .map(b => (b, perun.proto.decode(b)))
+        .tap(showDecodeResult)
+        .collect { case (b, Right(m)) => (b, m) }
         /* This can be parallelized but attention still has to be paid to
          * order of messages. Peer will send us channel announcements first,
          * then node announcements. We should make sure that validation of
@@ -73,11 +76,16 @@ def start(
               case Message.Ping(p) => perun.proto.ping.receiveMessage(p)
               case Message.GossipTimestampFilter(f) =>
                 state.update(receiveGTF(f, _)).as(Response.Ignore)
-              case Message.Init(_)              => ZIO.succeed(Response.Ignore)
-              case Message.Pong(_)              => ZIO.succeed(Response.Ignore)
-              case Message.ReplyChannelRange(_) => ZIO.succeed(Response.Ignore)
+              case Message.Init(_) => ZIO.succeed(Response.Ignore)
+              case Message.Pong(_) => ZIO.succeed(Response.Ignore)
+              case Message.ReplyChannelRange(r) =>
+                Console.printLine("### RCR > " + r) *> ZIO.succeed(
+                  Response.Ignore
+                )
               case Message.NodeAnnouncement(n) =>
-                offerNode(n).as(Response.Ignore)
+                Console.printLine("### NA > " + n) *> offerNode(n).as(
+                  Response.Ignore
+                )
               case Message.ChannelAnnouncement(c) =>
                 offerChannel(c).as(Response.Ignore)
               case Message.ChannelUpdate(c)     => ZIO.succeed(Response.Ignore)
@@ -112,7 +120,10 @@ def start(
     _ <- (ZIO.sleep(1.second) *> hw
       .publish(
         Message.Init(
-          Init(Features(hex"0x8000000000000000002822aaa2"), List(Chain.Regtest))
+          Init(
+            Features(hex"0x8000000000000000002822aaaa"),
+            List(Chain.Regtest)
+          )
         )
       )).fork
     _ <- ZIO.sleep(2.second) *> hw
@@ -131,6 +142,29 @@ def start(
     // _ <- perun.proto.ping.schedule(hr, hw).fork
     _ <- ZIO.never
   yield ()
+
+def showDecodeResult(bytes: ByteVector, result: Either[DecodeError, Message]) =
+  import org.typelevel.paiges.Doc.*
+  import org.typelevel.paiges.Style.*
+
+  val d = result match
+    case Left(DecodeError.UnknownMessage(disc)) =>
+      text("   ").style(Ansi.Bg.BrightYellow) &
+        text("Unknown discriminator " + disc).style(Ansi.Fg.BrightYellow) /
+        text("   ").style(Ansi.Bg.BrightYellow) &
+        text(bytes.toString).style(Ansi.Fg.BrightBlack)
+    case Left(DecodeError.Other(e)) =>
+      text("   ").style(Ansi.Bg.Red) &
+        text(e.toString()).style(Ansi.Fg.BrightRed) /
+        text("   ").style(Ansi.Bg.Red) &
+        text(bytes.toString).style(Ansi.Fg.BrightBlack)
+    case Right(m) =>
+      text("   ").style(Ansi.Bg.Green) &
+        text(pprint(m).render) /
+        text("   ").style(Ansi.Bg.Green) &
+        text(bytes.toString).style(Ansi.Fg.BrightBlack)
+
+  Console.printLine(d.render(100))
 
 /** Result of calling [[decryptOne]]. */
 enum DecryptedOne:

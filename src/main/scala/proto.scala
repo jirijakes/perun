@@ -1,6 +1,6 @@
 package perun.proto
 
-import scodec.Codec
+import scodec.*
 import scodec.bits.*
 import scodec.codecs.*
 
@@ -23,12 +23,12 @@ enum Message:
   case FundingLocked(m: channel.FundingLocked)
   case Shutdown(m: channel.Shutdown)
   case ClosingSigned(m: channel.ClosingSigned)
-  // case UpdateAddHtlc(m: channel.UpdateAddHtlc)
+// case UpdateAddHtlc(m: channel.UpdateAddHtlc)
 
 import Message.*
 
 // format: off
-val messageCodec: Codec[Message] = discriminated[Message].by(uint16)
+val messageCodec: DiscriminatorCodec[Message, Int] = discriminated[Message].by(uint16)
   .caseP(16)  { case Init(m)                  => m }(Init.apply                  )(init.init                   )
   .caseP(18)  { case Ping(m)                  => m }(Ping.apply                  )(ping.ping                   )
   .caseP(19)  { case Pong(m)                  => m }(Pong.apply                  )(ping.pong                   )
@@ -55,8 +55,16 @@ val messageCodec: Codec[Message] = discriminated[Message].by(uint16)
 //   case Ignore
 //   case FailConnection
 
-def decode(b: ByteVector): Either[String, Message] =
-  messageCodec.decodeValue(b.toBitVector).toEither.left.map(_.toString)
+def decode(b: ByteVector): Either[DecodeError, Message] =
+  messageCodec.decodeValue(b.toBitVector).toEither.left.map {
+    case d: messageCodec.UnknownDiscriminator =>
+      DecodeError.UnknownMessage(d.discriminator)
+    case e => DecodeError.Other(e)
+  }
 
 def encode(m: Message): ByteVector =
   messageCodec.encode(m).getOrElse(???).toByteVector
+
+enum DecodeError:
+  case UnknownMessage(messageType: Int)
+  case Other(error: Err)
