@@ -26,8 +26,7 @@ final case class NodeAnnouncement(
     nodeId: NodeId,
     color: Color,
     alias: Alias,
-    addresses: Vector[Address],
-    unknown: ByteVector
+    addresses: Vector[Address]
 )
 
 val nodeAnnouncement: Codec[NodeAnnouncement] =
@@ -39,10 +38,8 @@ val nodeAnnouncement: Codec[NodeAnnouncement] =
         ("node_id" | nodeId) ::
         ("rgb_color" | color) ::
         ("alias" | alias) ::
-        ("addresses" | vector(
-          variableSizeBytes("addrlen" | uint16, address)
-        )) ::
-        ("unknown" | bytes)
+        ("addresses" |
+          variableSizeBytes("addrlen" | uint16, vector(address)))
     ).as[NodeAnnouncement]
   )(signed(64, _.signature, _.nodeId))
 

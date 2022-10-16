@@ -79,13 +79,9 @@ def start(
               case Message.Init(_) => ZIO.succeed(Response.Ignore)
               case Message.Pong(_) => ZIO.succeed(Response.Ignore)
               case Message.ReplyChannelRange(r) =>
-                Console.printLine("### RCR > " + r) *> ZIO.succeed(
-                  Response.Ignore
-                )
+                ZIO.succeed(Response.Ignore)
               case Message.NodeAnnouncement(n) =>
-                Console.printLine("### NA > " + n) *> offerNode(n).as(
-                  Response.Ignore
-                )
+                offerNode(n).as(Response.Ignore)
               case Message.ChannelAnnouncement(c) =>
                 offerChannel(c).as(Response.Ignore)
               case Message.ChannelUpdate(c)     => ZIO.succeed(Response.Ignore)

@@ -68,7 +68,7 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
 
           for
             id <- m.get("id").flatMap(cast[String])
-            ts <- m.get("timestamp").flatMap(cast[Long])
+            ts <- m.get("timestamp").flatMap(cast[Long]).orElse(Some(0L))
             bl <- m
               .get("blacklisted")
               .flatMap(cast[Boolean])
@@ -141,10 +141,17 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
     val n1 = getOrCreateNode(c.nodeId1)
     val n2 = getOrCreateNode(c.nodeId2)
     val ch = g
-      .addE("channel")
-      .from(n1)
-      .to(n2)
-      .property("shortChannelId", c.shortChannelId.toString)
+      .E()
+      .has("channel", "shortChannelId", c.shortChannelId.toString)
+      .fold()
+      .coalesce(
+        unfold(),
+        addE("channel")
+          .from(n1)
+          .to(n2)
+          .property("shortChannelId", c.shortChannelId.toString)
+      )
+
     ZIO.attempt(ch.next()).unit
 
   // TODO: Per specification, we should ignore node announcements for unknown channels
@@ -161,11 +168,8 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
       .property("color", n.color.hex)
       .property("alias", n.alias.asText.getOrElse(""))
       .property("timestamp", n.timestamp)
-    // println(">>> " + n1)
-    ZIO
-      .attempt(n1.next())
-      // .tapCause(e => Task(println("######> " + e.prettyPrint)))
-      .unit
+
+    ZIO.attempt(n1.next()).unit
 
 def getOrCreateNode(id: NodeId): GraphTraversal[Nothing, Vertex] =
   V()
