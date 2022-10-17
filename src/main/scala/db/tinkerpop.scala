@@ -22,7 +22,7 @@ import scala.jdk.CollectionConverters.*
 import perun.db.p2p.P2P
 import perun.p2p.*
 import perun.proto.codecs.*
-import perun.proto.gossip.{ChannelAnnouncement, NodeAnnouncement}
+import perun.proto.gossip.{ChannelAnnouncement, ChannelUpdate, NodeAnnouncement}
 import scala.reflect.ClassTag
 
 def gremlin: ZLayer[GraphTraversalSource, Nothing, P2P] =
@@ -97,11 +97,12 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
         .map { p =>
           val m = p.asScala.toMap[String, Any]
           for
-            case f: String <- m.get("from")
-            case t: String <- m.get("to")
-            case i: String <- m.get("shortChannelId")
+            f <- m.get("from").flatMap(cast[String])
+            t <- m.get("to").flatMap(cast[String])
+            i <- m.get("shortChannelId").flatMap(cast[String])
             id <- ShortChannelId.fromString(i)
-          yield Channel(id, NodeId.fromHex(f), NodeId.fromHex(t))
+            ts = m.get("timestamp").flatMap(cast[Long])
+          yield Channel(id, NodeId.fromHex(f), NodeId.fromHex(t), ts)
         }
         .toList
         .collect { case Some(c) => c }
@@ -112,7 +113,9 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
     def res = g
       .E()
       .has("channel", "shortChannelId", shortChannelId.toString)
-      .project("from", "to")
+      .project("shortChannelId", "timestamp", "from", "to")
+      .by("shortChannelId")
+      .by("timestamp")
       .by(outV().values("id"))
       .by(inV().values("id"))
       .toList()
@@ -120,14 +123,15 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
     def channel =
       res.asScala
         .map { p =>
-          val m = p.asScala
-          m.get("from")
-            .flatMap((f: String) =>
-              m.get("to")
-                .map((t: String) =>
-                  Channel(shortChannelId, NodeId.fromHex(f), NodeId.fromHex(t))
-                )
-            )
+          val m = p.asScala.toMap[String, Any]
+
+          for
+            f <- m.get("from").flatMap(cast[String])
+            t <- m.get("to").flatMap(cast[String])
+            i <- m.get("shortChannelId").flatMap(cast[String])
+            id <- ShortChannelId.fromString(i)
+            ts = m.get("timestamp").flatMap(cast[Long])
+          yield Channel(id, NodeId.fromHex(f), NodeId.fromHex(t), ts)
         }
         .toList
         .headOption
@@ -137,6 +141,20 @@ final case class Gremlin(g: GraphTraversalSource) extends P2P:
     // TODO: Remove sleep when we understand why just inserted channel can't be retreived
     ZIO.sleep(50.millis) *> ZIO.succeed(channel)
 
+  def updateChannel(c: ChannelUpdate): Task[Unit] =
+    val ch = g
+      .E()
+      .has("channel", "shortChannelId", c.shortChannelId.toString)
+      .property("cltvExpiryDelta", c.cltvExpiryDelta)
+      .property("htlcMaximumMsat", c.htlcMaximumMsat)
+      .property("htlcMinimumMsat", c.htlcMinimumMsat)
+      .property("feeBaseMsat", c.feeBaseMsat)
+      .property("feeProportionalMillionths", c.feeProportionalMillionths)
+      .property("timestamp", c.timestamp)
+
+    ZIO.attempt(ch.next()).unit
+
+  // TODO: Perhaps we may store txout inside channel so we don't query it all the time
   def offerChannel(c: ChannelAnnouncement): Task[Unit] =
     val n1 = getOrCreateNode(c.nodeId1)
     val n2 = getOrCreateNode(c.nodeId2)

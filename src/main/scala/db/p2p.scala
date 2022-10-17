@@ -3,12 +3,13 @@ package perun.db.p2p
 import zio.*
 
 import perun.p2p.*
-import perun.proto.gossip.{ChannelAnnouncement, NodeAnnouncement}
+import perun.proto.gossip.{ChannelAnnouncement, ChannelUpdate, NodeAnnouncement}
 
 trait P2P:
   def offerNode(n: NodeAnnouncement): IO[Throwable, Unit]
   def offerChannel(c: ChannelAnnouncement): IO[Throwable, Unit]
   def findChannel(shortId: ShortChannelId): IO[Throwable, Option[Channel]]
+  def updateChannel(c: ChannelUpdate): IO[Throwable, Unit]
   def findChannels(nodeId: NodeId): IO[Throwable, List[Channel]]
   def findNode(nodeId: NodeId): IO[Throwable, Option[Node]]
 
@@ -21,6 +22,9 @@ def offerNode(n: NodeAnnouncement): ZIO[P2P, Throwable, Unit] =
 
 def offerChannel(c: ChannelAnnouncement): ZIO[P2P, Throwable, Unit] =
   ZIO.serviceWithZIO(_.offerChannel(c))
+
+def updateChannel(c: ChannelUpdate): ZIO[P2P, Throwable, Unit] =
+  ZIO.serviceWithZIO(_.updateChannel(c))
 
 def findChannel(
     shortChannelId: ShortChannelId

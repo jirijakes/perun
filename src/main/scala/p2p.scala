@@ -25,7 +25,8 @@ final case class Node(
 final case class Channel(
     shortChannelId: ShortChannelId,
     node1: NodeId,
-    node2: NodeId
+    node2: NodeId,
+    timestamp: Option[Long]
 )
 
 opaque type Point = PublicKey

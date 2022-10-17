@@ -17,7 +17,8 @@ final case class Response[A](result: Option[A]) derives Decoder
 
 final case class ScriptPubKey(hex: String) derives Decoder
 
-final case class TxOut(scriptPubKey: ScriptPubKey) derives Decoder
+final case class TxOut(scriptPubKey: ScriptPubKey, value: BigDecimal)
+    derives Decoder
 
 final case class Tx(txid: String, vout: Vector[TxOut]) derives Decoder
 

@@ -94,6 +94,8 @@ val color: Codec[Color] = (byte :: byte :: byte).as[Color]
 opaque type Msat = BigInt
 val msat: Codec[Msat] = uint64.uint64
 
+extension (m: Msat) def msatToBtc: BigDecimal = BigDecimal(m) / 1e11
+
 opaque type Sat = BigInt
 val sat: Codec[Sat] = uint64.uint64
 

@@ -84,7 +84,8 @@ def start(
                 offerNode(n).as(Response.Ignore)
               case Message.ChannelAnnouncement(c) =>
                 offerChannel(c).as(Response.Ignore)
-              case Message.ChannelUpdate(c)     => ZIO.succeed(Response.Ignore)
+              case Message.ChannelUpdate(c) =>
+                updateChannel(c).as(Response.Ignore)
               case Message.QueryChanellRange(q) => ZIO.succeed(Response.Ignore)
             }
 
@@ -117,25 +118,26 @@ def start(
       .publish(
         Message.Init(
           Init(
-            Features(hex"0x8000000000000000002822aaaa"),
+            // Features(hex"0x8000000000000000002822aaaa"),
+            Features(bin"0100".toByteVector),
             List(Chain.Regtest)
           )
         )
       )).fork
-    _ <- ZIO.sleep(2.second) *> hw
+    _ <- ZIO.sleep(5.second) *> hw
       .publish(
         Message.QueryChanellRange(
           QueryChannelRange(Chain.Regtest, 0, 1000, false, false)
         )
       )
       .fork
-    _ <- (ZIO.sleep(3.second) *> hw
-      .publish(
-        Message.GossipTimestampFilter(
-          GossipTimestampFilter(Chain.Regtest, 0L, 4294967295L)
-        )
-      )).fork
-    // _ <- perun.proto.ping.schedule(hr, hw).fork
+    // _ <- (ZIO.sleep(3.second) *> hw
+    //   .publish(
+    //     Message.GossipTimestampFilter(
+    //       GossipTimestampFilter(Chain.Regtest, 0L, 4294967295L)
+    //     )
+    //   )).fork
+    // // _ <- perun.proto.ping.schedule(hr, hw).fork
     _ <- ZIO.never
   yield ()
 

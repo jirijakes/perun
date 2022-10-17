@@ -211,6 +211,7 @@ def validate(conf: perun.peer.Configuration)(
 ]] =
   import perun.proto.bolt.*
 
+  // TODO: Use given?
   message match
     case Message.NodeAnnouncement(m) =>
       react(nodeAnnouncement.validation, bytes, m, conf)
