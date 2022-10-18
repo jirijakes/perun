@@ -62,8 +62,8 @@ libraryDependencies ++= List(
   "org.zeromq" % "jeromq" % "0.5.2",
   "dev.optics" %% "monocle-core" % "3.1.0",
   "org.typelevel" %% "cats-parse" % "0.3.8",
-  "dnsjava" % "dnsjava" % "3.5.1"
-  // "org.parboiled" % "parboiled_2.13" % "2.3.0" // not available for Scala3 yet
+  "dnsjava" % "dnsjava" % "3.5.1",
+  "org.parboiled" %% "parboiled" % "2.4.0"
 )
 
 excludeDependencies ++= Seq(
