@@ -1,5 +1,6 @@
 package perun.proto.bolt.channelUpdate
 
+import org.bitcoins.crypto.CryptoUtil.{doubleSHA256, sha256}
 import org.typelevel.paiges.Doc.*
 import scodec.bits.ByteVector
 import zio.*
@@ -11,15 +12,51 @@ import perun.proto.gossip.ChannelUpdate
 import perun.db.p2p.*
 import perun.net.rpc.*
 import perun.proto.codecs.*
+import perun.crypto.secp256k1.*
+
+val validateSignature: Val[P2P & Secp256k1, Throwable, ChannelUpdate] =
+  validate(
+    ctx =>
+      val hash = doubleSHA256(ctx.bytes.drop(2 + 64))
+      findChannel(ctx.message.shortChannelId).flatMap {
+        case None =>
+          ZIO.succeed(Validation.fail(failConnection("Signature is invalid.")))
+        case Some(ch) =>
+          val nodeId =
+            if ctx.message.channelFlags.originator == ChannelUpdate.Originator.Node1 then
+              ch.node1
+            else ch.node2
+          predicateM(verifySignature(ctx.message.signature, hash, nodeId))(
+            identity,
+            ctx.message,
+            failConnection("Signature is invalid.")
+          )
+
+      },
+    text("if") & field("signature") & split(
+      "is not a valid signature, using"
+    ) & field("node_id") & split(
+      "of the double-SHA256 of the entire message following the"
+    ) & field("signature") & split(
+      "field (including unknown fields following"
+    ) & field("fee_proportional_millionths") & char(')') & char(':') /
+      (split("SHOULD send a") & field("warning") & split(
+        "and close the connection."
+      )).indent(3) /
+      split("MUST NOT process the message further.").indent(3)
+  )
 
 val validateTimestamp: Val[P2P, Throwable, ChannelUpdate] =
   validate(
     ctx =>
-      predicateM(findChannel(ctx.message.shortChannelId))(
-        _.forall(_.timestamp.exists(_ < ctx.message.timestamp)),
-        ctx.message,
-        ignore("Timestamp is lower than previous one.")
-      ),
+      findChannel(ctx.message.shortChannelId)
+        .flatMap(ch =>
+          expect(
+            ch.exists(_.timestamp.forall(_ <= ctx.message.timestamp)),
+            ctx.message,
+            ignore("Timestamp is lower than previous one.")
+          )
+        ),
     text("if") & field("timestamp") & split(
       "is lower than that of the last-received"
     ) & field("channel_update") & split("for this") & field(
@@ -62,8 +99,9 @@ val validatePreviousChannel: Val[P2P, Throwable, ChannelUpdate] =
     )).indent(3)
   )
 
-val validation: Bolt[P2P & Rpc, Throwable, ChannelUpdate] =
+val validation: Bolt[P2P & Rpc & Secp256k1, Throwable, ChannelUpdate] =
   bolt("#7", "Channel update")(
+    validateSignature,
     validatePreviousChannel,
     validateTimestamp,
     validateCapacity

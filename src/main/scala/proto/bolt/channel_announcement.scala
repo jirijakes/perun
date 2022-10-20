@@ -43,7 +43,7 @@ val validateSignatures: Val[Secp256k1, Nothing, ChannelAnnouncement] =
 val validateChain: Val[Any, Nothing, ChannelAnnouncement] =
   validate(
     ctx =>
-      predicate(
+      expect(
         ctx.message.chain == ctx.conf.chain,
         ctx.message,
         ignore("Announcement was not meant for this chain.")

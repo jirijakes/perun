@@ -169,7 +169,7 @@ inline def accept[A](a: A): Validation[Nothing, A] = Validation.succeed(a)
 
 /** Create a validation from pure predicate.
   */
-inline def predicate[A](
+inline def expect[A](
     p: => Boolean,
     a: => A,
     fail: => Invalid
@@ -186,7 +186,7 @@ inline def predicateM[R, E, A0, A](m: ZIO[R, E, A0])(
     a: => A,
     fail: => Invalid
 ): ZIO[R, E, Validation[Invalid, A]] =
-  m.flatMap(l => predicate(p(l), a, fail))
+  m.flatMap(l => expect(p(l), a, fail))
 
 /** Create a validation from effectful predicate.
   *
@@ -199,7 +199,7 @@ inline def predicateMF[R, E, A0, A](m: ZIO[R, E, A0])(
     a: => A,
     fail: A0 => Invalid
 ): ZIO[R, E, Validation[Invalid, A]] =
-  m.flatMap(l => predicate(p(l), a, fail(l)))
+  m.flatMap(l => expect(p(l), a, fail(l)))
 
 def validate(conf: perun.peer.Configuration)(
     bytes: ByteVector,

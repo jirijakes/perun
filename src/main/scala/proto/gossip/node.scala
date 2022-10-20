@@ -197,13 +197,33 @@ final case class ChannelUpdate(
     shortChannelId: ShortChannelId,
     timestamp: Long,
     messageFlags: Byte,
-    channelFlags: Byte,
+    channelFlags: ChannelFlags,
     cltvExpiryDelta: Int,
     htlcMinimumMsat: Msat,
     feeBaseMsat: Long,
     feeProportionalMillionths: Long,
     htlcMaximumMsat: Msat
 )
+
+object ChannelUpdate:
+  enum Originator:
+    case Node1
+    case Node2
+
+final case class ChannelFlags(
+    disable: Boolean,
+    originator: ChannelUpdate.Originator
+)
+
+val channelFlags = (ignore(6) ::
+  bool ::
+  bool.xmap(
+    {
+      case false => ChannelUpdate.Originator.Node1
+      case true  => ChannelUpdate.Originator.Node2
+    },
+    _ == ChannelUpdate.Originator.Node1
+  )).as[ChannelFlags]
 
 val channelUpdate: Codec[ChannelUpdate] =
   (
@@ -212,7 +232,7 @@ val channelUpdate: Codec[ChannelUpdate] =
       ("short_channel_id" | shortChannelId) ::
       ("timestamp" | uint32) ::
       ("message_flags" | byte) ::
-      ("channel_flags" | byte) ::
+      ("channel_flags" | channelFlags) ::
       ("cltv_expiry_delta" | uint16) ::
       ("htlc_minimum_msat" | msat) ::
       ("fee_base_msat" | uint32) ::
