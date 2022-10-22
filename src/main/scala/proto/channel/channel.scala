@@ -5,9 +5,57 @@ import perun.p2p.*
 import perun.proto.blockchain.*
 import perun.proto.codecs.*
 import perun.proto.tlv.*
-import scodec.*
-import scodec.bits.ByteVector
+import scodec.{bits as _, *}
+import scodec.bits.{BitVector, ByteVector}
 import scodec.codecs.*
+
+enum ChannelFeatures:
+  case NoFeatures
+  case StaticRemoteKey
+  case AnchorOutputsStaticRemoteKey
+  case Anchors0FeeTxStaticRemoteKey
+
+final case class ChannelType(
+    features: ChannelFeatures,
+    scidAlias: Boolean,
+    zeroConf: Boolean
+)
+
+val channelType: Codec[ChannelType] =
+  bits.xmap(
+    b =>
+      val flags = b.reverse
+      ChannelType(
+        features =
+          if flags.length > 22 && flags(22) && flags(12) then
+            ChannelFeatures.Anchors0FeeTxStaticRemoteKey
+          else if flags.length > 20 && flags(20) && flags(12) then
+            ChannelFeatures.AnchorOutputsStaticRemoteKey
+          else if flags.length > 12 && flags(12) then
+            ChannelFeatures.StaticRemoteKey
+          else ChannelFeatures.NoFeatures,
+        scidAlias = flags.length > 46 && flags(46),
+        zeroConf = flags.length > 50 && flags(50)
+      ),
+    ct =>
+      var pos = List.empty[Int]
+      if ct.scidAlias then pos = pos :+ 50
+      if ct.zeroConf then pos = pos :+ 46
+      ct.features match
+        case ChannelFeatures.NoFeatures =>
+        case ChannelFeatures.StaticRemoteKey =>
+          pos = pos :+ 12
+        case ChannelFeatures.AnchorOutputsStaticRemoteKey =>
+          pos = pos :+ 12 :+ 20
+        case ChannelFeatures.Anchors0FeeTxStaticRemoteKey =>
+          pos = pos :+ 12 :+ 22
+
+      pos
+        .foldLeft(BitVector.empty.padTo(pos.max))(_ set _)
+        .reverse
+        .toByteVector
+        .toBitVector
+  )
 
 final case class OpenChannel(
     chain: Chain,
@@ -29,7 +77,7 @@ final case class OpenChannel(
     firstPerCommitmentPoint: Point,
     channelFlags: Byte,
     upfrontShutdownScript: Option[ByteVector],
-    channelType: Option[ByteVector]
+    channelType: Option[ChannelType]
 )
 
 val openChannel: Codec[OpenChannel] =
@@ -52,7 +100,7 @@ val openChannel: Codec[OpenChannel] =
       ("htlc_basepoint" | point) ::
       ("first_per_commitment_point" | point) ::
       ("channel_flags" | byte) ::
-      ("open_channel_tlvs" | tlv(0L -> bytes, 1L -> bytes))
+      ("open_channel_tlvs" | tlv(0L -> bytes, 1L -> channelType))
   ).as[OpenChannel]
 
 final case class AcceptChannel(
