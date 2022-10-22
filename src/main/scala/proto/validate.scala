@@ -36,7 +36,7 @@ private class Signed[T](
   def decode(bits: BitVector): Attempt[DecodeResult[T]] =
     codec.decode(bits) match
       case f: Attempt.Failure => f
-      case s @ Attempt.Successful(DecodeResult(t, _, rem)) =>
+      case s @ Attempt.Successful(DecodeResult(t, rem)) =>
         val witness = doubleSHA256(
           bits.drop(skipBits).dropRight(rem.length).toByteVector
         )

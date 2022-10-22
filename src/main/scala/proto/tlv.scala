@@ -15,46 +15,36 @@ object TlvStream:
   def apply(m: Map[Long, ByteVector]): TlvStream = m
   def empty: TlvStream = Map.empty
 
-def tlv[C](t1: (Long, Codec[C])): Codec[Option[C]] =
-  tlvStream.exmap(
-    (_: Map[Long, ByteVector])
-      .get(t1._1)
-      .fold(Attempt.successful(None))(v =>
-        t1._2.decodeValue(v.toBitVector).map(Some(_))
-      ),
-    _.fold(Attempt.successful(Map.empty))(c =>
-      t1._2.encode(c).map(v => Map(t1._1 -> v.toByteVector))
-    )
-  )
+type Tlv[T <: Tuple] <: Tuple = T match
+  case (Long, Codec[h])      => Option[h] *: EmptyTuple
+  case (Long, Codec[h]) *: t => Option[h] *: Tlv[t]
+  case EmptyTuple            => EmptyTuple
 
-def tlv[C1, C2](
-    t1: (Long, Codec[C1]),
-    t2: (Long, Codec[C2])
-): Codec[(Option[C1], Option[C2])] =
-  tlvStream.exmap(
-    (in: Map[Long, ByteVector]) =>
-      for
-        c1 <- in
-          .get(t1._1)
-          .fold(Attempt.successful(None))(v =>
-            t1._2.decodeValue(v.toBitVector).map(Some(_))
-          )
-        c2 <- in
-          .get(t2._1)
-          .fold(Attempt.successful(None))(v =>
-            t2._2.decodeValue(v.toBitVector).map(Some(_))
-          )
-      yield (c1, c2),
-    (c1, c2) =>
-      for
-        m1 <- c1.fold(Attempt.successful(Map.empty))(c =>
-          t1._2.encode(c).map(v => Map(t1._1 -> v.toByteVector))
+def tlv[T <: Tuple](t: T): Codec[Tlv[T]] =
+  tlvStream.exmap(mapToTlv(t), tlvToMap(t))
+
+private def mapToTlv[T <: Tuple](t: T)(m: TlvStream): Attempt[Tlv[T]] =
+  t.toIArray
+    .map { case (i: Long, c: Codec[?]) =>
+      m.find(i)
+        .fold(Attempt.successful(Option.empty))(b =>
+          c.decodeValue(b.toBitVector).map(Option(_))
         )
-        m2 <- c2.fold(Attempt.successful(Map.empty))(c =>
-          t2._2.encode(c).map(v => Map(t2._1 -> v.toByteVector))
-        )
-      yield m1 ++ m2
-  )
+    }
+    .foldLeft(Attempt.successful(IArray.emptyObjectIArray))((acc, cur) =>
+      acc.flatMap(arr => cur.map(c => arr :+ c))
+    )
+    .map(arr => runtime.Tuples.fromIArray(arr).asInstanceOf[Tlv[T]])
+
+private def tlvToMap[T <: Tuple](t: T)(tt: Tlv[T]): Attempt[TlvStream] =
+  t.zip(tt)
+    .toIArray
+    .map { case ((a: Long, b: Codec[h]), c: Option[?]) =>
+      b.encode(c.asInstanceOf[Option[h]].get).map(b => (a, b))
+    }
+    .foldLeft(Attempt.successful(Map.empty[Long, ByteVector]))((acc, cur) =>
+      acc.flatMap(macc => cur.map((i, b) => macc.updated(i, b.toByteVector)))
+    )
 
 final case class Record(tag: Long, content: ByteVector)
 
