@@ -120,7 +120,8 @@ def start(
           Init(
             // Features(hex"0x8000000000000000002822aaaa"),
             Features(bin"0100".toByteVector),
-            List(Chain.Regtest)
+            Some(List(Chain.Regtest)),
+            None
           )
         )
       )).fork

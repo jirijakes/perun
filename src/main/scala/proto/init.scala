@@ -7,20 +7,15 @@ import scodec.codecs.*
 import perun.proto.blockchain.*
 import perun.proto.codecs.*
 import perun.proto.features.*
-import perun.proto.tlv.*
 
-final case class Init(features: Features, s: List[Chain])
-
-val tlvNetworks: Codec[List[Chain]] = list(chain)
-
-val tlvInit: Codec[List[Chain]] = tlvStream.exmap(
-  x =>
-    for
-      a <- Attempt.fromOption(x.find(1), Err("aaaaa"))
-      b <- tlvNetworks.decode(a.toBitVector)
-    yield b.value,
-  y => tlvNetworks.encode(y).map(b => TlvStream(Map((1L, b.toByteVector))))
+final case class Init(
+    features: Features,
+    networks: Option[List[Chain]],
+    remoteAddress: Option[Address]
 )
 
 val init: Codec[Init] =
-  (("features" | features2) :: ("tlv_stream" | tlvInit)).as[Init]
+  (
+    ("features" | features2) ::
+      ("tlv_stream" | tlv(1L -> list(chain), 3L -> address))
+  ).as[Init]

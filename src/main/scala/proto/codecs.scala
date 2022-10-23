@@ -53,6 +53,7 @@ export perun.p2p.Point.codec as point
 export perun.p2p.ShortChannelId.codec as shortChannelId
 export perun.p2p.ShortChannelId.codecEncoded as encodedShortIds
 export perun.p2p.Timestamp.codec as timestamp
+export perun.proto.tlv.tlv
 
 enum Address:
   case Ip(ip: InetAddress, port: Int)
