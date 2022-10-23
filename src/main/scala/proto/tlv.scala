@@ -131,9 +131,9 @@ private object runtime:
     mapping
       .zip(tlv)
       .toIArray
-      .map { case ((tag: Long, codec: Codec[t]), value: Option[?]) =>
+      .collect { case ((tag: Long, codec: Codec[t]), Some(value)) =>
         codec
-          .encode(value.asInstanceOf[Option[t]].get)
+          .encode(value.asInstanceOf[t])
           .map(bits => (tag, bits.toByteVector))
       }
       .foldLeft(Attempt.successful(TlvStream.empty))((acc, cur) =>
