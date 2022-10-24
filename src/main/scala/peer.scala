@@ -18,7 +18,7 @@ import perun.db.p2p.*
 import perun.db.store.*
 import perun.net.rpc.*
 import perun.proto.blockchain.Chain
-import perun.proto.features.Features
+import perun.proto.features.*
 import perun.proto.gossip.{
   GossipTimestampFilter,
   QueryChannelRange,
@@ -118,8 +118,7 @@ def start(
       .publish(
         Message.Init(
           Init(
-            // Features(hex"0x8000000000000000002822aaaa"),
-            Features(bin"0100".toByteVector),
+            Flags(Feature.GossipQueries),
             Some(List(Chain.Regtest)),
             None
           )

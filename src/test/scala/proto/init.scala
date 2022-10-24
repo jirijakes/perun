@@ -17,7 +17,14 @@ import perun.test.gen.*
 object InitTest extends ZIOSpecDefault:
 
   val initMessage = Init(
-    Features(hex"08a000080269a2"),
+    features = Flags(
+      Feature.DataLossProtect,
+      Feature.VarOnionOptin,
+      Feature.GossipQueries,
+      Feature.GossipQueriesEx,
+      Feature.UpfrontShutdownScript,
+      Feature.ZeroConf
+    ),
     networks = Some(List(Chain.Regtest)),
     remoteAddress = None
   )
@@ -25,17 +32,16 @@ object InitTest extends ZIOSpecDefault:
   val spec =
     suite("init")(
       test("decode") {
-        val msg =
-          hex"00022100000708a000080269a2012006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f".toBitVector
-
         assertTrue(
-          init.decode(msg) ==
+          init.decode(
+            hex"00022100000708a000080269a2012006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f".toBitVector
+          ) ==
             Attempt.successful(DecodeResult(initMessage, BitVector.empty))
         )
       },
       test("encode") {
         val expected =
-          hex"0000000708a000080269a2012006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f".toBitVector
+          hex"0000000704000000000551012006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f".toBitVector
 
         assertTrue(init.encode(initMessage) == Attempt.successful(expected))
       }

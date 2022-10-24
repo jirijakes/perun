@@ -1,6 +1,6 @@
 #+TITLE: TODO
 
-* Assorted [7/17]
+* Assorted [8/17]
 
   - [X] Make ~uint64~ represented by ~BigInt~, ~bigsize~ will remain ~Long~
   - [ ] Solve verification of signatures in gossip messages
@@ -12,7 +12,7 @@
     - https://github.com/zio/zio-json/blob/develop/.scalafix.conf
     - https://scalacenter.github.io/scalafix/docs/users/installation.html
   - [ ] organize packages and rename project
-  - [ ] Move to zio-json when 3.0.0
+  - [X] Move to zio-json when 3.0.0
   - [X] Use Secp256k1 JNA
   - [ ] Remove Bitcoin-s dependency, if possible
   - [ ] Add Secp256k1 JNA tests
@@ -26,3 +26,9 @@
   - [ ] Move HTTP client from STTP to zio-http when better
   - [ ] Bring refined
   - [ ] Rename 'private key' to 'secret key'
+
+* Features [1/3]
+
+  - [ ] Add missing features
+  - [X] In ~flags~ codec, try using macro instead of passing ~Enum.values~
+  - [ ] Clarify optional vs. compulsory

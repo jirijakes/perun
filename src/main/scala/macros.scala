@@ -1,34 +1,14 @@
-package macros
+package perun.macros
 
-object Bitfield:
+import scala.quoted.*
 
-  class Bitfield[A](n: List[String]):
-    override def toString = n.mkString(" • ")
-/*
-  import scala.quoted.*
+inline def enumValues[E <: scala.reflect.Enum]: Array[E] =
+  ${ enumValuesImpl[E] }
 
-  case class Flax(isRed: Boolean, isDotted: Boolean)
-
-  inline def bitfield[A](inline fs: A => Boolean*): Bitfield[A] = ${ impl[A]('fs) }
-
-  def impl[A](fs: Expr[Seq[Any]])(using t: Type[A])(using q: Quotes): Expr[Bitfield[A]] =
-    import q.reflect.*
-
-    def names: Expr[Seq[String]] = fs match
-      case Varargs(es) =>
-        Expr(
-          es.map(_.asTerm match {
-            case Block(a, Closure(_, _)) => a.head match {
-              case DefDef(_, _, _, Some(Select(_, name))) => name
-            }
-          }
-          )
-        )
-
-    val C = TypeRepr.of[A].typeSymbol.companionModule
-
-    // now how to call C.apply?
-
-
-    '{new Bitfield[A](${names}.toList)}
- */
+private def enumValuesImpl[E](using t: Type[E])(using Quotes): Expr[Array[E]] =
+  import quotes.reflect.*
+  val a = TypeTree.of[E]
+  val s = a.symbol
+  val o = s.companionModule
+  val comp = Ref(o)
+  Select.unique(comp, "values").asExprOf[Array[E]]
