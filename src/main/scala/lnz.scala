@@ -52,7 +52,7 @@ object lnz extends ZIOAppDefault:
       init: HandshakeState,
       read: Stream[Throwable, Byte],
       write: Sink[Throwable, Byte, Nothing, Int]
-  ) =
+  ): ZIO[Secp256k1 & Keygen, Object, (Peer, ByteVector)] =
     read
       .via(collectByLengths(50, 66))
       .map(c => ByteVector.apply(c.toArray))
@@ -115,8 +115,31 @@ object lnz extends ZIOAppDefault:
   // Polar: 172.17.0.1
 
   def run =
-    Console.printLine(ls1.publicKey) *>
-      ZStream
+    for
+      _ <- Console.printLine(ls1.publicKey)
+      h <- Hub.unbounded[(Promise[String, String], String)]
+      _ <- ZStream
+        .fromHub(h)
+        .foreach((p, s) => p.succeed(s.map(_.toUpper)))
+        .fork
+      _ <- ZStream
+        .fromSocketServer(9988, None)
+        .foreach(c =>
+          Console.printLine(">>> " + c) *> c.read
+            .via(ZPipeline.utf8Decode >>> ZPipeline.splitLines)
+            .foreach { line =>
+              for
+                p <- Promise.make[String, String]
+                _ <- h.publish((p, line)).fork
+                s <- p.await
+                _ <- ZStream(s + '\n').via(ZPipeline.utf8Encode).run(c.write)
+                _ <- c.closeWrite()
+              yield ()
+            }
+            .fork
+        )
+        .fork
+      e <- ZStream
         .fromSocketServer(9977, None)
         .foreach { c =>
           handshake(responder, c.read, c.write)
@@ -140,5 +163,5 @@ object lnz extends ZIOAppDefault:
         .provideSomeLayer(dep)
         .provideEnvironment(DefaultServices.live)
         .exitCode
-
+    yield e
 end lnz
