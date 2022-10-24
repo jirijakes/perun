@@ -46,7 +46,7 @@ libraryDependencies ++= List(
   "com.softwaremill.quicklens" %% "quicklens" % "1.9.0",
   "org.scodec" %% "scodec-core" % "2.2.0",
   "org.scodec" %% "scodec-bits" % "1.1.34",
-  "org.hsqldb" % "hsqldb" % "2.7.0",
+  "org.hsqldb" % "hsqldb" % "2.7.1",
   "com.lihaoyi" %% "fansi" % "0.4.0",
   "com.lihaoyi" %% "pprint" % "0.8.0",
   // "com.orientechnologies" % "orientdb-graphdb" % "3.2.0",
