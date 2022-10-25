@@ -1,28 +1,31 @@
 package perun.net.rpc
 
-import io.circe.syntax.*
-import io.circe.{Decoder, Encoder, Json}
 import sttp.client3.*
-import sttp.client3.circe.*
+import sttp.client3.ziojson.*
 import sttp.client3.httpclient.zio.*
 import sttp.model.Uri
 import zio.*
+import zio.json.*
 
 export sttp.client3.UriContext
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 
 import perun.p2p.*
 
-final case class Response[A](result: Option[A]) derives Decoder
-
-final case class ScriptPubKey(hex: String) derives Decoder
-
+final case class Response[A](result: Option[A])
+final case class ScriptPubKey(hex: String)
 final case class TxOut(scriptPubKey: ScriptPubKey, value: BigDecimal)
-    derives Decoder
+final case class Tx(txid: String, vout: Vector[TxOut])
+final case class Block(tx: Vector[Tx])
+final case class Request[T](jsonrpc: String, method: String, params: T)
 
-final case class Tx(txid: String, vout: Vector[TxOut]) derives Decoder
-
-final case class Block(tx: Vector[Tx]) derives Decoder
+given [A](using JsonDecoder[A]): JsonDecoder[Response[A]] =
+  DeriveJsonDecoder.gen
+given JsonDecoder[ScriptPubKey] = DeriveJsonDecoder.gen
+given JsonDecoder[TxOut] = DeriveJsonDecoder.gen
+given JsonDecoder[Tx] = DeriveJsonDecoder.gen
+given JsonDecoder[Block] = DeriveJsonDecoder.gen
+given [T](using JsonEncoder[T]): JsonEncoder[Request[T]] = DeriveJsonEncoder.gen
 
 trait Rpc:
   def txout(block: Int, tx: Int, out: Int): Task[Option[TxOut]]
@@ -36,22 +39,16 @@ case class BitcoinDRpc(
 ) extends Rpc:
 
   class RpcPartialApply[Res]:
-    def apply[P <: Tuple: Encoder](
+    def apply[P <: Tuple: JsonEncoder](
         method: String
-    )(params: P = EmptyTuple)(using Decoder[Res]): Task[Option[Res]] =
+    )(params: P = EmptyTuple)(using JsonDecoder[Res]): Task[Option[Res]] =
       sem
         .withPermit {
           quickRequest
             .post(endpoint)
             .auth
             .basic(user, password)
-            .body(
-              Json.obj(
-                "jsonrpc" := "2.0",
-                "method" := method,
-                "params" := params
-              )
-            )
+            .body(Request("2.0", method, params))
             .response(asJson[Response[Res]])
             .send(cl)
         }
